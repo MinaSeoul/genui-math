@@ -1,24 +1,44 @@
-// Claude 응답 JSON 스키마 정의
+export type ProblemType = 'formula' | 'graph' | 'application'
+export type DifficultyType = 'understanding' | 'strategy' | 'midway' | 'visual'
 
-export interface AnalyzeResponse {
-  problemType: 'formula' | 'graph' | 'application'
+// 1단계: 이미지 분석 응답
+export interface AnalyzeImageResponse {
+  problemType: ProblemType
   problemText: string
   latex: string
 }
 
+// 2단계: 풀이 생성 응답
 export interface Step {
-  explanation: string
+  desc: string
   latex: string
+  note?: string
 }
 
-export interface VisualData {
-  expression?: string
-  domain?: [number, number]
-  highlights?: string[]
-  animationElements?: unknown[]
+export interface FormulaVisualData {
+  type: 'formula'
 }
 
-export interface SolveResponse {
+export interface GraphVisualData {
+  type: 'graph'
+  expression: string
+  domain: [number, number]
+  roots?: number[]
+  vertex?: [number, number]
+}
+
+export interface ApplicationVisualData {
+  type: 'application'
+  rate?: number
+  unit?: string
+  totalTime?: number
+  totalHeight?: number
+}
+
+export type VisualData = FormulaVisualData | GraphVisualData | ApplicationVisualData
+
+export interface GenerateSolutionResponse {
   steps: Step[]
   visualData: VisualData
+  stuckExplanation: string
 }
