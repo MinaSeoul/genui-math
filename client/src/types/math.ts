@@ -9,6 +9,8 @@ export interface Step {
 
 export interface FormulaVisualData {
   type: 'formula'
+  roots?: number[]
+  vertex?: [number, number]
 }
 
 export interface GraphVisualData {
@@ -34,6 +36,7 @@ export interface AnalysisResult {
   problemType: ProblemType
   problemText: string
   latex: string
+  confidence?: number
 }
 
 export interface SolutionResult {

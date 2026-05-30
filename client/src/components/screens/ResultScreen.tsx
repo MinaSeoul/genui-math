@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Icon from '../icons'
 import Katex from '../shared/Katex'
 import RichText from '../shared/RichText'
@@ -30,6 +31,8 @@ const StepsList = ({ steps }: { steps: Problem['steps'] }) => (
 )
 
 const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => {
+  const [showSecondary, setShowSecondary] = useState(false)
+
   const diff = DIFFICULTIES.find((d) => d.code === difficulty) ?? DIFFICULTIES[0]
   const stuckText = (problem.stuck && (problem.stuck[difficulty] ?? problem.stuck[problem.defaultDifficulty])) ?? ''
 
@@ -39,6 +42,25 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
     graph: { icon: 'graph', label: '인터랙티브 그래프' },
     application: { icon: 'motion', label: '상황 애니메이션' },
     formula: { icon: 'layers', label: '단계별 수식 풀이' },
+  }[problem.type]
+
+  // 보조 시각화 설정 (유형별로 다른 뷰 제공)
+  const secondaryMeta = {
+    formula: { label: '그래프로 확인하기', icon: 'graph', hasData: !!problem.graph },
+    application: { label: '애니메이션으로 보기', icon: 'motion', hasData: !!problem.anim },
+    graph: { label: '단계별 풀이 보기', icon: 'layers', hasData: problem.steps.length > 0 },
+  }[problem.type]
+
+  const SecondaryViz = {
+    formula: GraphView,
+    application: AnimationView,
+    graph: FormulaView,
+  }[problem.type]
+
+  const secondaryVizMeta = {
+    formula: { icon: 'graph', label: '그래프 확인' },
+    application: { icon: 'motion', label: '상황 애니메이션' },
+    graph: { icon: 'layers', label: '단계별 수식 풀이' },
   }[problem.type]
 
   return (
@@ -91,6 +113,38 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
           </div>
         </div>
       </div>
+
+      {/* 보조 시각화 토글 영역 */}
+      <div className="secondary-viz-bar stack stack-4">
+        <button
+          className={`btn btn-viz-toggle${showSecondary ? ' active' : ''}`}
+          disabled={!secondaryMeta.hasData}
+          onClick={() => setShowSecondary((s) => !s)}
+          title={secondaryMeta.hasData ? '' : '이 문제 유형에서는 보조 시각화 데이터가 없어요'}
+        >
+          <Icon name={secondaryMeta.icon} size={15} />
+          {showSecondary ? '닫기' : secondaryMeta.label}
+          <Icon name={showSecondary ? 'arrowL' : 'arrow'} size={13} />
+        </button>
+        {!secondaryMeta.hasData && (
+          <span className="muted" style={{ fontSize: 12.5 }}>이 문제는 보조 시각화 데이터가 없어요</span>
+        )}
+      </div>
+
+      {showSecondary && secondaryMeta.hasData && (
+        <div className="card viz secondary-viz-panel">
+          <div className="viz-head">
+            <div className="vt">
+              <span className="vi"><Icon name={secondaryVizMeta.icon} size={16} /></span>
+              {secondaryVizMeta.label}
+            </div>
+            <span className="kbd">secondary.view</span>
+          </div>
+          <div className="viz-body">
+            <SecondaryViz problem={problem} />
+          </div>
+        </div>
+      )}
 
       <ChatPanel problem={problem} />
     </div>

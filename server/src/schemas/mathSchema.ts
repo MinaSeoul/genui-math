@@ -6,6 +6,7 @@ export interface AnalyzeImageResponse {
   problemType: ProblemType
   problemText: string
   latex: string
+  confidence: number
 }
 
 // 2단계: 풀이 생성 응답
@@ -17,6 +18,8 @@ export interface Step {
 
 export interface FormulaVisualData {
   type: 'formula'
+  roots?: number[]
+  vertex?: [number, number]
 }
 
 export interface GraphVisualData {

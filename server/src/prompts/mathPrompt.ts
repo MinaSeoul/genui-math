@@ -14,12 +14,14 @@ Output this exact JSON structure:
 {
   "problemType": "formula",
   "problemText": "Full problem text exactly as written in Korean",
-  "latex": "Main mathematical expression in LaTeX (e.g., f(x) = x^2 - 2x + 1)"
+  "latex": "Main mathematical expression in LaTeX (e.g., f(x) = x^2 - 2x + 1)",
+  "confidence": 90
 }
 
 Rules:
 - problemText: copy all text exactly as shown in the image, preserving Korean
 - latex: convert only the primary math expression; use standard LaTeX notation
+- confidence: integer 0–100 representing how certain you are of the classification (90+ = very clear, 70–89 = reasonably clear, below 70 = ambiguous or unclear image)
 - Respond with ONLY the JSON. No other text.`
 }
 
@@ -35,7 +37,11 @@ const DIFFICULTY_HINTS: Record<DifficultyType, string> = {
 }
 
 const VISUAL_DATA_INSTRUCTIONS: Record<ProblemType, string> = {
-  formula: `"visualData": { "type": "formula" }`,
+  formula: `"visualData": {
+  "type": "formula",
+  "roots": [optional numeric roots if the problem is a polynomial equation f(x)=0; omit if not a polynomial or has no real roots],
+  "vertex": [optional [vx, vy] vertex of the parabola if the equation is quadratic; omit otherwise]
+}`,
   graph: `"visualData": {
   "type": "graph",
   "expression": "LaTeX function string for Desmos, e.g. y = x^2 - 2x - 3",
@@ -70,6 +76,13 @@ Student's difficulty: ${difficultyType}
 Tutoring focus: ${DIFFICULTY_HINTS[difficultyType]}
 
 Generate a step-by-step solution tailored to this student's difficulty. Respond with ONLY a JSON object — no markdown, no code fences, no extra text.
+
+Math solving principles (follow strictly when constructing steps):
+- Keep all coefficients as integers throughout; never convert to decimals or improper fractions mid-solution
+- When factoring is possible, always factor; use the quadratic formula only when factoring is not feasible
+- Mirror the exact order a student would write steps by hand — no skipping ahead
+- Show every intermediate step explicitly: transpositions, common denominators, grouping of common factors
+- Express the final answer in simplest integer or fraction form (e.g., x = -1/2, not x = -0.5)
 
 Output this exact JSON structure:
 {

@@ -36,29 +36,42 @@ function buildProblemFromAPI(
     stuck[difficultyType] = solution.stuckExplanation
   }
 
-  // graph: roots/vertex로 포물선 계수 역산하여 GraphView 재사용
+  // graph / formula: roots+vertex로 포물선 계수 역산하여 GraphView 재사용
   let graph: Problem['graph']
-  if (analysis.problemType === 'graph') {
+  const buildGraph = (roots: number[] | undefined, vertex: [number, number] | undefined) => {
     let a = 1, b = 0, c = 0
+    if (roots && roots.length === 2) {
+      const [r1, r2] = roots
+      b = -(r1 + r2)
+      c = r1 * r2
+    } else if (vertex) {
+      const [vx, vy] = vertex
+      b = -2 * vx
+      c = vy + vx * vx
+    }
+    const vx = -b / (2 * a)
+    return {
+      a, b, c,
+      roots: roots ?? [],
+      vertex: vertex ?? [vx, a * vx * vx + b * vx + c] as [number, number],
+      param: { key: 'c', label: 'c', min: Math.floor(c) - 4, max: Math.ceil(c) + 4, step: 0.5, value: c },
+    }
+  }
+
+  if (analysis.problemType === 'graph') {
     const vd = solution?.visualData
     if (vd?.type === 'graph') {
-      const roots = vd.roots
-      const vertex = vd.vertex
-      if (roots && roots.length === 2) {
-        const [r1, r2] = roots
-        b = -(r1 + r2)
-        c = r1 * r2
-      } else if (vertex) {
-        const [vx, vy] = vertex
-        b = -2 * vx
-        c = vy + vx * vx
-      }
+      graph = buildGraph(vd.roots, vd.vertex)
+    } else {
+      graph = buildGraph([], undefined)
     }
-    graph = {
-      a, b, c,
-      roots: (solution?.visualData as { roots?: number[] })?.roots ?? [],
-      vertex: (solution?.visualData as { vertex?: [number, number] })?.vertex ?? [0, 0],
-      param: { key: 'c', label: 'c', min: Math.floor(c) - 4, max: Math.ceil(c) + 4, step: 0.5, value: c },
+  }
+
+  // formula: visualData에 roots/vertex가 있으면 GraphView용 그래프도 구성
+  if (analysis.problemType === 'formula') {
+    const vd = solution?.visualData
+    if (vd?.type === 'formula' && (vd.roots?.length || vd.vertex)) {
+      graph = buildGraph(vd.roots, vd.vertex)
     }
   }
 
@@ -79,7 +92,7 @@ function buildProblemFromAPI(
     typeLabel: typeLabels[analysis.problemType] ?? analysis.problemType,
     typeDesc: typeDescs[analysis.problemType] ?? '',
     fname: fileName,
-    confidence: 93,
+    confidence: analysis.confidence ?? 93,
     qno: '업로드 문제',
     qtext: analysis.problemText,
     qtextLatex: analysis.latex,
