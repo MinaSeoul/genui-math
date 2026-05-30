@@ -3,11 +3,25 @@ import Icon from '../icons'
 
 interface UploadScreenProps {
   onPick: (key: string) => void
+  onUpload?: (base64: string, fileName: string) => void
 }
 
-const UploadScreen = ({ onPick }: UploadScreenProps) => {
+const UploadScreen = ({ onPick, onUpload }: UploadScreenProps) => {
   const [drag, setDrag] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const handleFile = (file: File) => {
+    if (!onUpload) {
+      onPick('graph')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1]
+      onUpload(base64, file.name)
+    }
+    reader.readAsDataURL(file)
+  }
 
   const samples = [
     { key: 'graph', icon: 'graph', cls: 'graph', title: '함수·그래프형', desc: '이차함수와 x축 교점 — 인터랙티브 그래프로 풀이' },
@@ -32,10 +46,15 @@ const UploadScreen = ({ onPick }: UploadScreenProps) => {
 
         <div
           className={'dropzone stack stack-2' + (drag ? ' drag' : '')}
-          onClick={() => onPick('graph')}
+          onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDrag(true) }}
           onDragLeave={() => setDrag(false)}
-          onDrop={(e) => { e.preventDefault(); setDrag(false); onPick('graph') }}
+          onDrop={(e) => {
+            e.preventDefault()
+            setDrag(false)
+            const file = e.dataTransfer.files[0]
+            if (file) handleFile(file)
+          }}
         >
           <div className="uic"><Icon name="upload" size={32} /></div>
           <h3>스크린샷을 여기에 끌어다 놓으세요</h3>
@@ -44,7 +63,17 @@ const UploadScreen = ({ onPick }: UploadScreenProps) => {
             <span className="chip"><span className="ico"><Icon name="image" size={14} /></span> PNG · JPG</span>
             <span className="chip"><span className="ico"><Icon name="bolt" size={14} /></span> 평균 3초</span>
           </div>
-          <input ref={fileRef} type="file" accept="image/png,image/jpeg" hidden onChange={() => onPick('graph')} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleFile(file)
+              e.target.value = ''
+            }}
+          />
         </div>
 
         <div className="reassure stack stack-3">
