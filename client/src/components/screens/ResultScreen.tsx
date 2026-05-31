@@ -22,8 +22,14 @@ const StepsList = ({ steps }: { steps: Problem['steps'] }) => (
         <div className="num">{i + 1}</div>
         <div className="fc">
           <div className="desc"><RichText text={s.desc} /></div>
-          <div className="math-box"><Katex tex={s.latex} /></div>
-          {s.note && <div className="note"><Icon name="check" size={14} /> {s.note}</div>}
+          {s.latex && <div className="math-box"><Katex tex={s.latex} /></div>}
+          {s.keyFormula && (
+            <div className="key-formula-box">
+              <div className="kf-label">📐 적용 공식</div>
+              <Katex tex={s.keyFormula} display={true} />
+            </div>
+          )}
+          {s.note && <div className="note"><Icon name="check" size={14} /> <RichText text={s.note} /></div>}
         </div>
       </div>
     ))}
@@ -36,32 +42,39 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
   const diff = DIFFICULTIES.find((d) => d.code === difficulty) ?? DIFFICULTIES[0]
   const stuckText = (problem.stuck && (problem.stuck[difficulty] ?? problem.stuck[problem.defaultDifficulty])) ?? ''
 
-  const vizMap = { graph: GraphView, application: AnimationView, formula: FormulaView } as const
-  const Viz = vizMap[problem.type]
-  const vizMeta = {
+  type VizMeta = { icon: string; label: string }
+  const vizMetaMap: Record<string, VizMeta> = {
     graph: { icon: 'graph', label: '인터랙티브 그래프' },
     application: { icon: 'motion', label: '상황 애니메이션' },
     formula: { icon: 'layers', label: '단계별 수식 풀이' },
-  }[problem.type]
+  }
+  const vizMeta = vizMetaMap[problem.type] ?? { icon: 'layers', label: '풀이' }
 
-  // 보조 시각화 설정 (유형별로 다른 뷰 제공)
-  const secondaryMeta = {
+  const secondaryMetaMap: Record<string, { label: string; icon: string; hasData: boolean }> = {
     formula: { label: '그래프로 확인하기', icon: 'graph', hasData: !!problem.graph },
     application: { label: '애니메이션으로 보기', icon: 'motion', hasData: !!problem.anim },
     graph: { label: '단계별 풀이 보기', icon: 'layers', hasData: problem.steps.length > 0 },
-  }[problem.type]
+  }
+  const secondaryMeta = secondaryMetaMap[problem.type] ?? { label: '', icon: 'layers', hasData: false }
 
-  const SecondaryViz = {
-    formula: GraphView,
-    application: AnimationView,
-    graph: FormulaView,
-  }[problem.type]
-
-  const secondaryVizMeta = {
+  const secondaryVizMetaMap: Record<string, VizMeta> = {
     formula: { icon: 'graph', label: '그래프 확인' },
     application: { icon: 'motion', label: '상황 애니메이션' },
     graph: { icon: 'layers', label: '단계별 수식 풀이' },
-  }[problem.type]
+  }
+  const secondaryVizMeta = secondaryVizMetaMap[problem.type] ?? { icon: 'layers', label: '풀이' }
+
+  const renderPrimary = () => {
+    if (problem.type === 'graph') return <GraphView problem={problem} />
+    if (problem.type === 'application') return <AnimationView problem={problem} />
+    return <FormulaView problem={problem} difficulty={difficulty} />
+  }
+
+  const renderSecondary = () => {
+    if (problem.type === 'formula') return <GraphView problem={problem} />
+    if (problem.type === 'application') return <AnimationView problem={problem} />
+    return <FormulaView problem={problem} />
+  }
 
   return (
     <div className="container result screen">
@@ -87,7 +100,7 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
             <span className="kbd">{problem.type}.view</span>
           </div>
           <div className="viz-body">
-            <Viz problem={problem} />
+            {renderPrimary()}
           </div>
         </div>
 
@@ -103,10 +116,16 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
           <div className="card panel stack stack-3">
             <div className="panel-title"><span className="pi"><Icon name="layers" size={17} /></span> 단계별 풀이</div>
             {problem.type === 'formula' ? (
-              <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
-                왼쪽에서 '다음 단계' 버튼을 눌러 한 단계씩 직접 전개해 보세요.
-                스스로 다음 식을 예상해 본 뒤 확인하면 훨씬 오래 기억에 남아요.
-              </p>
+              difficulty === 'midway' ? (
+                <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
+                  왼쪽에서 단계를 하나씩 열어보세요. 이해가 안 되는 단계는 '심화 설명'을 요청하면 더 쉽게 풀어드려요.
+                </p>
+              ) : (
+                <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
+                  왼쪽에서 '다음 단계' 버튼을 눌러 한 단계씩 직접 전개해 보세요.
+                  스스로 다음 식을 예상해 본 뒤 확인하면 훨씬 오래 기억에 남아요.
+                </p>
+              )
             ) : (
               <StepsList steps={problem.steps} />
             )}
@@ -141,7 +160,7 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
             <span className="kbd">secondary.view</span>
           </div>
           <div className="viz-body">
-            <SecondaryViz problem={problem} />
+            {renderSecondary()}
           </div>
         </div>
       )}

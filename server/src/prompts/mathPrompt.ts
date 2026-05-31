@@ -33,13 +33,13 @@ export function buildAnalyzePrompt(): string {
 아래 JSON 형식으로만 출력해:
 {
   "problemType": "formula",
-  "problemText": "이미지에 적힌 문제 전체 텍스트(한국어 그대로)",
+  "problemText": "이미지에 적힌 문제 전체 텍스트(한국어 그대로, 수식은 LaTeX로 변환)",
   "latex": "주요 수식을 LaTeX로 표현 (예: f(x) = x^2 - 2x + 1)",
   "confidence": 90
 }
 
 규칙:
-- problemText: 이미지에 보이는 텍스트를 정확히 그대로 복사, 한국어 보존
+- problemText: 이미지에 보이는 텍스트를 정확히 그대로 복사, 한국어 보존. 수학 수식은 반드시 LaTeX 형식으로 변환해서 출력하세요. 인라인 수식은 $...$로, 블록 수식은 $$...$$로 감싸세요. 예: (1/3^15)^(1/n) → $\\left(\\frac{1}{3^{15}}\\right)^{\\frac{1}{n}}$
 - latex: 주요 수식만 LaTeX 표기로 변환; 표준 LaTeX 표기법 사용
 - confidence: 분류 확신도를 정수(0~100)로 표현 (90 이상=매우 명확, 70~89=대체로 명확, 70 미만=모호하거나 이미지 불선명)
 - 반드시 JSON만 출력. 다른 텍스트 없음.`
@@ -116,7 +116,8 @@ ${problemText}
     {
       "desc": "이 단계에서 무엇을 하는지, 왜 하는지 한국어로 설명",
       "latex": "이 단계에서 계산한 LaTeX 수식 (설명만으로 충분하면 빈 문자열)",
-      "note": "이 학생에게 도움이 되는 선택적 한국어 힌트나 통찰 (불필요하면 생략)"
+      "note": "이 학생에게 도움이 되는 선택적 한국어 힌트나 통찰 (불필요하면 생략)",
+      "keyFormula": "이 단계에서 핵심적으로 적용된 공식을 LaTeX로 표현 (예: x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}). 특별한 공식이 없으면 생략"
     }
   ],
   ${VISUAL_DATA_INSTRUCTIONS[problemType]},
@@ -125,9 +126,25 @@ ${problemText}
 
 규칙:
 - desc, note, stuckExplanation은 모두 한국어로 작성
+- desc와 note에 수식이 등장하면 반드시 KaTeX 문법 사용: 인라인은 $...$, 블록은 $$...$$
+  예) "근과 계수의 관계에서 $\\alpha + \\beta = 5$임을 이용한다"
 - 3~6단계 포함; 각 단계는 풀이를 실질적으로 진전시켜야 함
 - latex는 유효한 LaTeX 형식으로 (\\frac, ^, _, \\sqrt 등 사용)
 - 반드시 JSON만 출력. 다른 텍스트 없음.`
+}
+
+export function buildExplainPrompt(stepDesc: string, stepIndex: number): string {
+  return `당신은 친절한 한국 고등학교 수학 선생님입니다.
+
+다음은 수학 풀이의 ${stepIndex + 1}단계입니다:
+${stepDesc}
+
+고등학생이 이 단계를 이해하지 못했습니다. 더 쉽고 구체적으로, 예시를 들어가며 재설명해주세요.
+- 왜 이 단계가 필요한지 먼저 설명하세요
+- 계산 과정을 한 줄씩 천천히 풀어서 설명하세요
+- KaTeX 형식의 수식을 사용하세요. 인라인 수식은 $...$, 블록 수식은 $$...$$로 감싸세요
+- 3~5문장으로 간결하게, 하지만 핵심을 빠뜨리지 말고 설명하세요
+- 마크다운 코드 펜스 없이 텍스트만 출력하세요`
 }
 
 export function buildChatPrompt(problemText: string): string {
@@ -137,6 +154,7 @@ export function buildChatPrompt(problemText: string): string {
 ${problemText}
 
 학생의 질문에 한국 고등학교 교육과정에 맞게 친절하고 간결하게 답해줘.
-수식은 LaTeX(\\( \\) 형식)로 표현해줘.
+모든 수식은 반드시 KaTeX 문법으로 출력해. 인라인 수식은 $...$, 블록 수식은 $$...$$로 감싸.
+예) $f'(x) = 0$, $$x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$
 답변은 3~5문장 이내로 간결하게 해줘.`
 }

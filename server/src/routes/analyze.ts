@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { analyzeImage, generateChatReply, generateSolution } from '../services/claudeService.js'
+import { analyzeImage, explainStep, generateChatReply, generateSolution } from '../services/claudeService.js'
 import type { DifficultyType, ProblemType } from '../schemas/mathSchema.js'
 
 export const analyzeRouter = Router()
@@ -43,8 +43,19 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       }
       const result = await generateChatReply(problemText, userMessage, chatHistory || [])
       res.json(result)
+    } else if (stage === 'explain') {
+      const { stepDesc, stepIndex } = req.body as {
+        stepDesc: string
+        stepIndex: number
+      }
+      if (!stepDesc || stepIndex === undefined) {
+        res.status(400).json({ error: 'stepDesc and stepIndex are required' })
+        return
+      }
+      const result = await explainStep(stepDesc, stepIndex)
+      res.json(result)
     } else {
-      res.status(400).json({ error: 'stage must be "analyze", "solve", or "chat"' })
+      res.status(400).json({ error: 'stage must be "analyze", "solve", "explain", or "chat"' })
     }
   } catch (error) {
     console.error('[/api/analyze]', error)

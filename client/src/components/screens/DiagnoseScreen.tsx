@@ -1,5 +1,6 @@
 import Icon from '../icons'
 import Katex from '../shared/Katex'
+import RichText from '../shared/RichText'
 import { DIFFICULTIES } from '../../data/sampleProblems'
 import type { Problem, DifficultyType } from '../../data/sampleProblems'
 
@@ -11,6 +12,14 @@ interface DiagnoseScreenProps {
 }
 
 const ProblemBody = ({ p }: { p: Problem }) => {
+  // 업로드된 문제는 qtext에 LaTeX 마커($...$)가 포함된 전체 텍스트
+  if (p.id === 'uploaded') {
+    return (
+      <div className="qtext">
+        <RichText text={p.qtext} />
+      </div>
+    )
+  }
   if (p.qtail2 !== undefined) {
     return (
       <div className="qtext">

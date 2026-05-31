@@ -103,6 +103,22 @@ genui-math/
 │   │   │       └── AnimationView.tsx  # 활용문제형 — Motion+SVG 애니메이션
 │   │   ├── hooks/
 │   │   │   └── useProblemAnalysis.ts  # 서버 /api/analyze 호출
+│   │   ├── prompts/                   # 단원별 시스템 프롬프트 (Markdown)
+│   │   │   ├── common.md              # 공통 출력 규칙 (모든 단원 공통 적용)
+│   │   │   ├── 공통수학1/
+│   │   │   │   ├── unit_다항식.md
+│   │   │   │   ├── unit_방정식.md
+│   │   │   │   ├── unit_부등식.md
+│   │   │   │   ├── unit_순열과조합.md
+│   │   │   │   └── unit_행렬.md
+│   │   │   ├── 공통수학2/
+│   │   │   │   ├── unit_도형의방정식.md
+│   │   │   │   ├── unit_집합과명제.md
+│   │   │   │   └── unit_함수.md
+│   │   │   └── 대수/
+│   │   │       ├── unit_삼각함수.md
+│   │   │       ├── unit_수열.md
+│   │   │       └── unit_지수로그.md
 │   │   ├── types/
 │   │   │   └── math.ts                # 문제 유형, 어려움 유형, 응답 타입
 │   │   ├── utils/
@@ -185,6 +201,31 @@ genui-math/
 | `strategy` | 문제는 이해하지만 어떻게 풀지 모르겠음 |
 | `midway` | 풀이 중간까지는 됐는데 이후를 모르겠음 |
 | `visual` | 시각적으로 이해가 필요함 |
+
+---
+
+## 클라이언트 프롬프트 시스템 (client/src/prompts/)
+
+### 구조
+
+`client/src/prompts/`는 단원별 시스템 프롬프트를 Markdown 파일로 관리한다.
+Claude API 호출 시 `common.md` + 해당 단원의 `unit_*.md`를 합쳐서 system prompt로 전송하는 구조다.
+
+```
+common.md          ← 모든 단원에 공통 적용되는 출력 규칙 (KaTeX 형식 포함)
+공통수학1/unit_*.md ← 각 단원별 풀이 원칙 + 예시
+공통수학2/unit_*.md
+대수/unit_*.md
+```
+
+### 수식 출력 규칙 (공통)
+
+`common.md`에 정의된 규칙이며 모든 단원에 적용된다:
+- 인라인 수식: `$...$` 형식 (예: `$f'(x) = 0$`)
+- 블록 수식: `$$...$$` 형식 (예: `$$x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}$$`)
+- 일반 텍스트 수식 금지: `f'(x) = 0`, `α+β` 등의 형식 사용 불가
+
+클라이언트의 `RichText.tsx` 컴포넌트가 `$...$`, `$$...$$`, `\(...\)`, `\[...\]` 네 가지 형식을 모두 KaTeX로 렌더링한다.
 
 ---
 

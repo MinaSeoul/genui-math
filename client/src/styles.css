@@ -821,13 +821,18 @@ body.force-visible .fade {
 
 .shot-body .qtext {
   font-size: 15.5px;
-  line-height: 1.8;
+  line-height: 1.9;
   color: #1a2230;
+}
+@media (min-width: 768px) {
+  .shot-body .qtext {
+    font-size: 16.5px;
+  }
 }
 
 .shot-body .qmath {
   margin: 16px 0;
-  font-size: 17px;
+  font-size: 18px;
   color: #11151c;
 }
 
@@ -935,13 +940,18 @@ body.force-visible .fade {
 }
 
 .typecard .tt h3 {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 800;
   margin-top: 2px;
 }
+@media (min-width: 768px) {
+  .typecard .tt h3 {
+    font-size: 22px;
+  }
+}
 
 .typecard .tt p {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-2);
   margin-top: 3px;
 }
@@ -952,13 +962,18 @@ body.force-visible .fade {
 
 .conf .pct {
   font-family: var(--mono);
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--accent);
 }
+@media (min-width: 768px) {
+  .conf .pct {
+    font-size: 30px;
+  }
+}
 
 .conf .cl {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-3);
 }
 
@@ -1216,9 +1231,14 @@ body.force-visible .fade {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--text-3);
   transition: color 0.3s;
+}
+@media (min-width: 768px) {
+  .load-steps .ls {
+    font-size: 15px;
+  }
 }
 
 .load-steps .ls.on {
@@ -1638,10 +1658,15 @@ body.force-visible .fade {
 }
 
 .fstep .fc .desc {
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--text-2);
-  line-height: 1.5;
+  line-height: 1.6;
   margin-bottom: 9px;
+}
+@media (min-width: 768px) {
+  .fstep .fc .desc {
+    font-size: 15px;
+  }
 }
 
 .fstep .fc .math-box {
@@ -1654,12 +1679,16 @@ body.force-visible .fade {
 
 .fstep .fc .math-box .katex {
   color: #e9edf4;
-  font-size: 17px;
+  font-size: 18px;
+}
+
+.katex {
+  font-size: 1.15em;
 }
 
 .fstep .fc .note {
   margin-top: 9px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -2079,6 +2108,119 @@ body.force-visible .fade {
 
   .reassure {
     gap: 12px;
+  }
+}
+
+/* ============================================================
+   Bold 강조 (RichText **텍스트**)
+   ============================================================ */
+.rich-bold {
+  color: var(--violet);
+  font-weight: 700;
+}
+
+/* ============================================================
+   핵심 공식 박스 (key-formula-box)
+   ============================================================ */
+.key-formula-box {
+  margin-top: 10px;
+  padding: 12px 16px 14px;
+  border-radius: 10px;
+  background: rgba(124, 106, 247, 0.12);
+  border-left: 3px solid var(--violet);
+}
+
+.key-formula-box .kf-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--violet);
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.key-formula-box .katex {
+  color: #e9edf4;
+}
+
+/* ============================================================
+   Midway UX 버튼 + 심화 설명
+   ============================================================ */
+.midway-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.midway-done {
+  margin-top: 18px;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  background: var(--good-soft);
+  border: 1px solid rgba(81, 207, 102, 0.28);
+  color: var(--good);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+@media (min-width: 768px) {
+  .midway-done {
+    font-size: 15px;
+  }
+}
+
+.step-explain {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+}
+
+.step-explain.loading-explain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.step-explain .explain-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--warn);
+  margin-bottom: 7px;
+}
+
+.step-explain .explain-body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-2);
+}
+@media (min-width: 768px) {
+  .step-explain .explain-body {
+    font-size: 15px;
+  }
+}
+
+/* ============================================================
+   Opt / Survey 텍스트 크기 반응형
+   ============================================================ */
+@media (min-width: 768px) {
+  .opt .ot h4 {
+    font-size: 15px;
+  }
+  .opt .ot p {
+    font-size: 13px;
+  }
+  .survey .q .qt h3 {
+    font-size: 17.5px;
+  }
+  .stuck-note p {
+    font-size: 14px;
+  }
+  .panel-title {
+    font-size: 15px;
   }
 }
 

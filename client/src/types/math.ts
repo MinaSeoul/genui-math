@@ -5,6 +5,7 @@ export interface Step {
   desc: string
   latex: string
   note?: string
+  keyFormula?: string
 }
 
 export interface FormulaVisualData {

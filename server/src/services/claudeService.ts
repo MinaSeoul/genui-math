@@ -4,10 +4,10 @@ import type {
   GenerateSolutionResponse,
   ProblemType,
 } from '../schemas/mathSchema.js'
-import { buildAnalyzePrompt, buildChatPrompt, buildSolvePrompt } from '../prompts/mathPrompt.js'
+import { buildAnalyzePrompt, buildChatPrompt, buildExplainPrompt, buildSolvePrompt } from '../prompts/mathPrompt.js'
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
-const MODEL = 'claude-haiku-4-5-20251001'
+const MODEL = 'claude-sonnet-4-6'
 
 function stripMarkdownFences(text: string): string {
   return text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim()
@@ -89,6 +89,23 @@ export async function generateChatReply(
   })
 
   return { reply: rawText.trim() }
+}
+
+export async function explainStep(
+  stepDesc: string,
+  stepIndex: number,
+): Promise<{ explanation: string }> {
+  const rawText = await callClaude({
+    model: MODEL,
+    max_tokens: 600,
+    messages: [
+      {
+        role: 'user',
+        content: buildExplainPrompt(stepDesc, stepIndex),
+      },
+    ],
+  })
+  return { explanation: rawText.trim() }
 }
 
 export async function generateSolution(
