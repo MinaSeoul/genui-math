@@ -22,6 +22,7 @@ export interface GraphConfig {
   vertex?: [number, number]
   extrema?: { x: number; y: number; type: 'max' | 'min' }[]
   param?: { key: string; label: string; min: number; max: number; step: number; value: number }
+  samples?: { x: number; y: number }[]
 }
 
 export interface AnimConfig {
@@ -167,38 +168,65 @@ export const PROBLEMS: Record<string, Problem> = {
     id: 'formula',
     type: 'formula',
     typeLabel: '단순 수식형',
-    typeDesc: '직접 계산해서 답을 구하는 방정식·부등식 문제예요.',
+    typeDesc: '지수방정식을 치환을 통해 이차방정식으로 변환해서 푸는 문제예요.',
     fname: 'screenshot_eq.png',
-    confidence: 98,
-    qno: '문제 7.',
-    qtext: '다음 이차방정식을 푸시오.',
-    qtextLatex: '2x^{2} - 5x - 3 = 0',
-    qtail: '',
-    title: '이차방정식 풀기',
-    thumb: '2x²−5x−3',
-    defaultDifficulty: 'midway',
+    confidence: 96,
+    qno: '문제 1.',
+    qtext: '방정식 ',
+    qtextLatex: '25^{x} - 2 \\cdot 5^{x+1} + 5 = 0',
+    qtail: '의 두 근을 α, β라 할 때, α+β의 값은?',
+    title: '지수방정식과 치환',
+    thumb: '25^x−2·5^{x+1}+5',
+    defaultDifficulty: 'strategy',
     steps: [
-      { desc: '곱셈 교차 분해법을 사용합니다. a=2, c=−3이므로 p×r=2, q×s=−3이 되는 정수 쌍을 찾아요.', latex: '2x^{2} - 5x - 3 = (px+q)(rx+s)' },
-      { desc: '(p,r)=(1,2), (q,s)=(1,−3) 조합을 시도합니다. 교차 곱 ps+qr = 1×(−3)+1×2 = −1 (불일치)', latex: '1 \\times (-3) + 1 \\times 2 = -1 \\neq -5' },
-      { desc: '(p,r)=(1,2), (q,s)=(3,−1) 조합을 시도합니다. 교차 곱 ps+qr = 1×(−1)+3×2 = 5 → 부호 조정', latex: '1 \\times (-1) + 3 \\times 2 = 5', note: '음수로 조정: (q,s)=(−3,1) → 교차 곱 −5 (일치!)' },
-      { desc: '(1x−3)(2x+1) 조합이 맞아요. 두 인수를 0으로 놓고 풉니다.', latex: '(x - 3)(2x + 1) = 0' },
-      { desc: '각각을 0으로 놓으면 두 근이 나옵니다.', latex: 'x = 3 \\quad \\text{또는} \\quad x = -\\tfrac{1}{2}', note: '정답: x = 3, −1/2' },
+      {
+        desc: 't = 5^x로 치환합니다 (t > 0). 25^x = (5^x)² = t², 5^{x+1} = 5·5^x = 5t이므로 원래 방정식이 t에 대한 이차방정식으로 변환됩니다.',
+        latex: 't^{2} - 10t + 5 = 0',
+      },
+      {
+        desc: '근의 공식을 적용합니다.',
+        latex: 't = \\frac{10 \\pm \\sqrt{100 - 20}}{2} = 5 \\pm 2\\sqrt{5}',
+        note: 't > 0이므로 두 근 모두 유효: 5+2√5 > 0, 5−2√5 > 0',
+      },
+      {
+        desc: 't = 5^x이므로 각 t 값에서 x를 구합니다.',
+        latex: '5^{x} = 5 + 2\\sqrt{5} \\quad \\text{또는} \\quad 5^{x} = 5 - 2\\sqrt{5}',
+      },
+      {
+        desc: '두 근을 로그로 나타냅니다.',
+        latex: '\\alpha = \\log_{5}(5 + 2\\sqrt{5}), \\quad \\beta = \\log_{5}(5 - 2\\sqrt{5})',
+      },
+      {
+        desc: '로그의 곱셈 법칙을 이용해 α+β를 계산합니다. (5+2√5)(5−2√5) = 25−20 = 5이므로:',
+        latex: '\\alpha + \\beta = \\log_{5}\\bigl[(5+2\\sqrt{5})(5-2\\sqrt{5})\\bigr] = \\log_{5} 5 = 1',
+        note: '정답: 1',
+      },
     ],
     stuck: {
-      midway: "'<b>풀이 중간</b>'에서 막혔군요. 교차 분해법의 핵심은 p×r=a, q×s=c이면서 교차 곱 ps+qr=b가 되는 쌍을 찾는 거예요. 여러 조합을 시도하다 보면 딱 맞는 쌍이 나와요.",
-      understanding: '이차방정식 \\(2x^2-5x-3=0\\)을 만족하는 x값(=해)을 모두 찾는 문제예요.',
-      strategy: '인수분해가 핵심 전략이에요. 교차 분해법으로 두 일차식의 곱으로 나타내면 해를 바로 구할 수 있어요.',
-      visual: '각 단계의 식 변화를 위에서 아래로 천천히 따라오면 흐름이 보여요.',
+      strategy: '치환이 핵심 전략이에요. 25^x = (5^x)²임을 이용해 t = 5^x로 놓으면 이차방정식으로 바뀌어요.',
+      understanding: '지수방정식이지만, 밑을 5로 통일하면 이차방정식처럼 풀 수 있어요.',
+      midway: 't² - 10t + 5 = 0까지 왔다면, 근의 공식을 쓰면 돼요. t값을 구한 뒤 다시 5^x = t로 돌아가서 x를 구해요.',
+      visual: '각 단계의 식 변환을 위에서 아래로 천천히 따라오세요.',
     },
     chat: {
-      hello: '이차방정식 \\(2x^2-5x-3=0\\)을 교차 분해법으로 풀어볼게요. 오른쪽 단계를 \'다음 단계\' 버튼으로 하나씩 넘기면서 따라와 보세요. 막히는 단계가 있으면 물어봐요!',
-      suggestions: ['교차 분해법이 뭔가요?', '근의 공식으로 풀면?', '검산은 어떻게 해요?'],
+      hello: '지수방정식 \\(25^x - 2 \\cdot 5^{x+1} + 5 = 0\\)은 t = 5^x 치환으로 이차방정식으로 변환해서 풀어요. 두 근의 합 α+β = 1이 나와요. 궁금한 점 편하게 물어봐요!',
+      suggestions: ['왜 t = 5^x로 치환하나요?', '근의 공식은 언제 써요?', 'α+β를 로그로 계산하는 이유는?'],
       replies: {
-        '교차 분해법이 뭔가요?': '\\(ax^2+bx+c\\)를 \\((px+q)(rx+s)\\)로 인수분해할 때, p×r=a, q×s=c이면서 교차 곱 ps+qr=b가 되는 정수 쌍을 찾는 방법이에요. 여러 조합을 시도하다 맞는 쌍을 찾으면 돼요.',
-        '근의 공식으로 풀면?': '\\(x=\\frac{5\\pm\\sqrt{25+24}}{4}=\\frac{5\\pm7}{4}\\) 이므로 \\(x=3\\) 또는 \\(x=-\\tfrac12\\). 인수분해와 똑같은 답이 나와요.',
-        '검산은 어떻게 해요?': '구한 해를 원래 식에 넣어요. \\(x=3\\): \\(2(9)-15-3=0\\) ✓, \\(x=-\\tfrac12\\): \\(2(\\tfrac14)+\\tfrac52-3=0\\) ✓.',
-        _default: "교차 분해법의 핵심은 p×r=2, q×s=−3이면서 교차 곱 ps+qr=−5가 되는 쌍 (1,2)×(−3,1)을 찾는 거예요. 단계별 풀이를 하나씩 넘겨보며 확인해 보세요!",
+        '왜 t = 5^x로 치환하나요?': '25^x = (5^x)²이고 5^{x+1} = 5·5^x이에요. 5^x를 t로 치환하면 \\(t^2 - 10t + 5 = 0\\)이라는 이차방정식이 되어서 풀기 쉬워져요.',
+        '근의 공식은 언제 써요?': '인수분해가 안 될 때 사용해요. \\(t^2 - 10t + 5 = 0\\)은 정수로 인수분해되지 않으므로 근의 공식 \\(t = \\frac{10 \\pm \\sqrt{80}}{2} = 5 \\pm 2\\sqrt{5}\\)를 씁니다.',
+        'α+β를 로그로 계산하는 이유는?': '\\(5^\\alpha = 5+2\\sqrt{5}\\), \\(5^\\beta = 5-2\\sqrt{5}\\)이므로 \\(\\alpha = \\log_5(5+2\\sqrt{5})\\), \\(\\beta = \\log_5(5-2\\sqrt{5})\\)예요. 로그 덧셈 법칙으로 \\(\\alpha+\\beta = \\log_5[(5+2\\sqrt{5})(5-2\\sqrt{5})] = \\log_5 5 = 1\\)이 돼요.',
+        _default: '핵심은 t = 5^x 치환으로 이차방정식을 만들고, 두 근 \\(t_1 = 5+2\\sqrt{5}\\), \\(t_2 = 5-2\\sqrt{5}\\)에서 각각 x를 구한 뒤 로그 법칙으로 α+β = 1을 계산하는 거예요.',
       },
     },
+    graph: (() => {
+      const samples: { x: number; y: number }[] = []
+      for (let i = 0; i <= 80; i++) {
+        const x = Math.round((-1 + i * 0.05) * 100) / 100
+        const t = Math.pow(5, x)
+        const y = Math.round((t * t - 10 * t + 5) * 10000) / 10000
+        samples.push({ x, y })
+      }
+      return { samples, roots: [-0.397, 1.397] }
+    })(),
   },
 }

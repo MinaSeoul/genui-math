@@ -1995,6 +1995,47 @@ body.force-visible .fade {
 }
 
 /* ============================================================
+   Markdown in AI chat bubbles
+   ============================================================ */
+.msg.ai .bubble .md-p {
+  margin-bottom: 0.5em;
+}
+.msg.ai .bubble .md-p:last-child {
+  margin-bottom: 0;
+}
+.msg.ai .bubble .md-h1,
+.msg.ai .bubble .md-h2,
+.msg.ai .bubble .md-h3 {
+  font-weight: 800;
+  margin-top: 0.6em;
+  margin-bottom: 0.3em;
+}
+.msg.ai .bubble .md-h1 { font-size: 1.15em; }
+.msg.ai .bubble .md-h2 { font-size: 1.08em; }
+.msg.ai .bubble .md-h3 { font-size: 1.02em; }
+.msg.ai .bubble strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+.msg.ai .bubble .md-ul,
+.msg.ai .bubble .md-ol {
+  padding-left: 1.4em;
+  margin-bottom: 0.5em;
+}
+.msg.ai .bubble .md-li {
+  margin-bottom: 0.3em;
+  line-height: 1.6;
+}
+.msg.ai .bubble .md-code {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0.1em 0.4em;
+  font-family: var(--mono);
+  font-size: 0.88em;
+}
+
+/* ============================================================
    Responsive — iPad portrait & small
    ============================================================ */
 @media (max-width: 980px) {

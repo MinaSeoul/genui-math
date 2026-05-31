@@ -1,7 +1,29 @@
 import { useState, useEffect, useRef } from 'react'
+import ReactMarkdown, { type Components } from 'react-markdown'
 import Icon from './icons'
 import RichText from './shared/RichText'
 import type { Problem } from '../data/sampleProblems'
+
+function processText(children: React.ReactNode): React.ReactNode {
+  if (typeof children === 'string') return <RichText text={children} />
+  if (Array.isArray(children)) {
+    return children.map((c, i) =>
+      typeof c === 'string' ? <RichText key={i} text={c} /> : c
+    )
+  }
+  return children
+}
+
+const mdComponents: Components = {
+  p: ({ children }) => <p className="md-p">{processText(children)}</p>,
+  h1: ({ children }) => <h1 className="md-h1">{processText(children)}</h1>,
+  h2: ({ children }) => <h2 className="md-h2">{processText(children)}</h2>,
+  h3: ({ children }) => <h3 className="md-h3">{processText(children)}</h3>,
+  ul: ({ children }) => <ul className="md-ul">{children}</ul>,
+  ol: ({ children }) => <ol className="md-ol">{children}</ol>,
+  li: ({ children }) => <li className="md-li">{processText(children)}</li>,
+  code: ({ children }) => <code className="md-code">{children}</code>,
+}
 
 interface ChatPanelProps {
   problem: Problem
@@ -81,7 +103,12 @@ const ChatPanel = ({ problem }: ChatPanelProps) => {
         {messages.map((m, i) => (
           <div key={i} className={'msg ' + (m.role === 'ai' ? 'ai' : 'me')}>
             <div className="av">{m.role === 'ai' ? <Icon name="spark" size={15} /> : '나'}</div>
-            <div className="bubble"><RichText text={m.text} /></div>
+            <div className="bubble">
+              {m.role === 'ai'
+                ? <ReactMarkdown components={mdComponents}>{m.text}</ReactMarkdown>
+                : <RichText text={m.text} />
+              }
+            </div>
           </div>
         ))}
         {typing && (

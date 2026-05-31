@@ -12,27 +12,35 @@ function evalPoly(coeffs: number[], x: number): number {
 
 const GraphView = ({ problem }: GraphViewProps) => {
   const g = problem.graph!
-  const isPoly = !!g.coefficients
+  const isSamples = !!g.samples
+  const isPoly = !isSamples && !!g.coefficients
 
   const [c, setC] = useState(g.c ?? 0)
 
   const a = g.a ?? 1
   const b = g.b ?? 0
 
-  const xmin = isPoly ? -3 : -2
-  const xmax = isPoly ? 3 : 6
-  const ymin = isPoly ? -4 : -4
-  const ymax = isPoly ? 4 : 8
+  const xmin = isSamples ? -1 : (isPoly ? -3 : -2)
+  const xmax = isSamples ? 3 : (isPoly ? 3 : 6)
+  const ymin = isSamples ? -25 : (isPoly ? -4 : -4)
+  const ymax = isSamples ? 25 : (isPoly ? 4 : 8)
 
   const W = 380, H = 320, pad = 6
   const toX = (x: number) => pad + (x - xmin) / (xmax - xmin) * (W - 2 * pad)
   const toY = (y: number) => pad + (1 - (y - ymin) / (ymax - ymin)) * (H - 2 * pad)
 
   const pts: (string | null)[] = []
-  for (let x = xmin; x <= xmax + 0.001; x += 0.05) {
-    const y = isPoly ? evalPoly(g.coefficients!, x) : a * x * x + b * x + c
-    if (y >= ymin - 2 && y <= ymax + 2) pts.push(`${toX(x).toFixed(1)},${toY(y).toFixed(1)}`)
-    else pts.push(null)
+  if (isSamples) {
+    g.samples!.forEach(({ x, y }) => {
+      if (y >= ymin - 2 && y <= ymax + 2) pts.push(`${toX(x).toFixed(1)},${toY(y).toFixed(1)}`)
+      else pts.push(null)
+    })
+  } else {
+    for (let x = xmin; x <= xmax + 0.001; x += 0.05) {
+      const y = isPoly ? evalPoly(g.coefficients!, x) : a * x * x + b * x + c
+      if (y >= ymin - 2 && y <= ymax + 2) pts.push(`${toX(x).toFixed(1)},${toY(y).toFixed(1)}`)
+      else pts.push(null)
+    }
   }
   const polyChunks: string[][] = []
   let cur: string[] = []
@@ -43,7 +51,7 @@ const GraphView = ({ problem }: GraphViewProps) => {
   let vx: number | undefined
   let vy: number | undefined
 
-  if (!isPoly) {
+  if (!isPoly && !isSamples) {
     const disc = b * b - 4 * a * c
     if (disc >= 0) {
       const s = Math.sqrt(disc)
@@ -55,8 +63,8 @@ const GraphView = ({ problem }: GraphViewProps) => {
 
   const fmt = (n: number) => (Math.round(n * 100) / 100).toString()
 
-  const xTicks = isPoly ? [-2, -1, 1, 2] : [-1, 1, 2, 3, 4, 5]
-  const yTicks = isPoly ? [-2, 2] : [2, 4, 6]
+  const xTicks = isSamples ? [-1, 0, 1, 2, 3] : (isPoly ? [-2, -1, 1, 2] : [-1, 1, 2, 3, 4, 5])
+  const yTicks = isSamples ? [-20, -10, 10, 20] : (isPoly ? [-2, 2] : [2, 4, 6])
 
   const gridLines: React.ReactNode[] = []
   for (let x = Math.floor(xmin); x <= xmax; x++)
@@ -64,7 +72,7 @@ const GraphView = ({ problem }: GraphViewProps) => {
   for (let y = Math.floor(ymin); y <= ymax; y++)
     gridLines.push(<line key={'hy' + y} className={y === 0 ? 'gp-axis' : 'gp-grid'} x1={toX(xmin)} y1={toY(y)} x2={toX(xmax)} y2={toY(y)} />)
 
-  const dist = roots.length === 2 && !isPoly ? Math.abs(roots[1] - roots[0]) : null
+  const dist = roots.length === 2 && !isPoly && !isSamples ? Math.abs(roots[1] - roots[0]) : null
 
   return (
     <div>
@@ -87,7 +95,7 @@ const GraphView = ({ problem }: GraphViewProps) => {
           ))}
 
           {/* Quadratic: vertex */}
-          {!isPoly && vx !== undefined && vy !== undefined && vy >= ymin && vy <= ymax && (
+          {!isPoly && !isSamples && vx !== undefined && vy !== undefined && vy >= ymin && vy <= ymax && (
             <g>
               <circle className="gp-point" cx={toX(vx)} cy={toY(vy)} r="4" fill="#9775fa" />
               <text className="gp-label" fill="#b9a5fb" x={toX(vx)} y={toY(vy) + 18} textAnchor="middle">꼭짓점</text>
@@ -95,7 +103,7 @@ const GraphView = ({ problem }: GraphViewProps) => {
           )}
 
           {/* Quadratic: roots */}
-          {!isPoly && roots.map((r, i) => (
+          {!isPoly && !isSamples && roots.map((r, i) => (
             <g key={'r' + i}>
               <circle className="gp-point" cx={toX(r)} cy={toY(0)} r="6" fill="#4dabf7" stroke="#0a0c10" strokeWidth="2" />
               <text className="gp-label" fill="#8fc7ff" x={toX(r)} y={toY(0) - 11} textAnchor="middle">{fmt(r)}</text>
@@ -123,6 +131,16 @@ const GraphView = ({ problem }: GraphViewProps) => {
               </g>
             )
           })}
+
+          {/* Samples: roots (α, β) */}
+          {isSamples && g.roots?.map((r, i) => (
+            <g key={'sr' + i}>
+              <circle className="gp-point" cx={toX(r)} cy={toY(0)} r="6" fill="#4dabf7" stroke="#0a0c10" strokeWidth="2" />
+              <text className="gp-label" fill="#8fc7ff" x={toX(r)} y={toY(0) - 11} textAnchor="middle">
+                {i === 0 ? 'β' : 'α'}
+              </text>
+            </g>
+          ))}
         </svg>
       </div>
 
@@ -142,20 +160,27 @@ const GraphView = ({ problem }: GraphViewProps) => {
 
       <div className="legend" style={{ marginTop: 12 }}>
         <span><i style={{ background: 'linear-gradient(90deg,#4dabf7,#3bc9db)' }} /> 그래프 {problem.qtextLatex}</span>
-        {!isPoly && <span><i style={{ background: '#4dabf7' }} /> x축 교점</span>}
-        {!isPoly && <span><i style={{ background: '#9775fa' }} /> 꼭짓점</span>}
+        {!isPoly && !isSamples && <span><i style={{ background: '#4dabf7' }} /> x축 교점</span>}
+        {!isPoly && !isSamples && <span><i style={{ background: '#9775fa' }} /> 꼭짓점</span>}
         {isPoly && <span><i style={{ background: '#9775fa' }} /> 극대·극소</span>}
+        {isSamples && <span><i style={{ background: '#4dabf7' }} /> 두 근 α, β</span>}
       </div>
 
-      {isPoly ? (
+      {isPoly && (
         <p className="muted" style={{ fontSize: 12.5, marginTop: 12, lineHeight: 1.6 }}>
           보라색 점에서 그래프의 증감 방향이 바뀌어요.
           위쪽 보라색 점이 <b style={{ color: '#b9a5fb' }}>극댓값 2</b>,
           아래쪽 보라색 점이 <b style={{ color: '#b9a5fb' }}>극솟값 −2</b>예요.
         </p>
-      ) : (
+      )}
+      {!isPoly && !isSamples && (
         <p className="muted" style={{ fontSize: 12.5, marginTop: 12, lineHeight: 1.6 }}>
           슬라이더로 상수항을 움직여 보세요. 두 교점(파란 점)이 가까워지거나 멀어지고, 그 <b style={{ color: '#3bc9db' }}>간격</b>이 바로 답이에요.
+        </p>
+      )}
+      {isSamples && (
+        <p className="muted" style={{ fontSize: 12.5, marginTop: 12, lineHeight: 1.6 }}>
+          파란 점 α, β가 x축과의 교점이에요. α+β = <b style={{ color: '#4dabf7' }}>1</b>이 정답이에요.
         </p>
       )}
     </div>
