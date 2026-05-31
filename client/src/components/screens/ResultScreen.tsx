@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import Icon from '../icons'
 import Katex from '../shared/Katex'
 import RichText from '../shared/RichText'
@@ -15,69 +14,38 @@ interface ResultScreenProps {
   onRestart: () => void
 }
 
-const StepsList = ({ steps }: { steps: Problem['steps'] }) => (
-  <div className="fsteps">
-    {steps.map((s, i) => (
-      <div key={i} className="fstep shown">
-        <div className="num">{i + 1}</div>
-        <div className="fc">
-          <div className="desc"><RichText text={s.desc} /></div>
-          {s.latex && <div className="math-box"><Katex tex={s.latex} /></div>}
-          {s.keyFormula && (
-            <div className="key-formula-box">
-              <div className="kf-label">📐 적용 공식</div>
-              <Katex tex={s.keyFormula} display={true} />
-            </div>
-          )}
-          {s.note && <div className="note"><Icon name="check" size={14} /> <RichText text={s.note} /></div>}
-        </div>
-      </div>
-    ))}
-  </div>
-)
+const guideText: Record<string, Record<string, string>> = {
+  formula: {
+    default: "아래 수식 풀이에서 '다음 단계' 버튼으로 한 단계씩 직접 전개해 보세요. 스스로 다음 식을 예상해 본 뒤 확인하면 훨씬 오래 기억에 남아요.",
+    midway: "아래 수식 풀이에서 단계를 하나씩 열어보세요. 이해가 안 되는 단계는 '심화 설명'을 요청하면 더 쉽게 풀어드려요.",
+  },
+  graph: {
+    default: "아래 그래프와 단계별 풀이를 함께 확인해 보세요. 그래프에서 극값 위치를 먼저 파악한 뒤 수식 풀이를 따라가면 이해가 빨라요.",
+  },
+  application: {
+    default: "아래 시각화 애니메이션으로 문제 상황을 파악한 뒤 단계별 풀이를 확인해 보세요.",
+  },
+}
 
 const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => {
-  const [showSecondary, setShowSecondary] = useState(false)
-
   const diff = DIFFICULTIES.find((d) => d.code === difficulty) ?? DIFFICULTIES[0]
   const stuckText = (problem.stuck && (problem.stuck[difficulty] ?? problem.stuck[problem.defaultDifficulty])) ?? ''
 
-  type VizMeta = { icon: string; label: string }
-  const vizMetaMap: Record<string, VizMeta> = {
+  const vizMetaMap: Record<string, { icon: string; label: string }> = {
     graph: { icon: 'graph', label: '인터랙티브 그래프' },
     application: { icon: 'motion', label: '상황 애니메이션' },
     formula: { icon: 'layers', label: '단계별 수식 풀이' },
   }
   const vizMeta = vizMetaMap[problem.type] ?? { icon: 'layers', label: '풀이' }
 
-  const secondaryMetaMap: Record<string, { label: string; icon: string; hasData: boolean }> = {
-    formula: { label: '그래프로 확인하기', icon: 'graph', hasData: !!problem.graph },
-    application: { label: '애니메이션으로 보기', icon: 'motion', hasData: !!problem.anim },
-    graph: { label: '단계별 풀이 보기', icon: 'layers', hasData: problem.steps.length > 0 },
-  }
-  const secondaryMeta = secondaryMetaMap[problem.type] ?? { label: '', icon: 'layers', hasData: false }
-
-  const secondaryVizMetaMap: Record<string, VizMeta> = {
-    formula: { icon: 'graph', label: '그래프 확인' },
-    application: { icon: 'motion', label: '상황 애니메이션' },
-    graph: { icon: 'layers', label: '단계별 수식 풀이' },
-  }
-  const secondaryVizMeta = secondaryVizMetaMap[problem.type] ?? { icon: 'layers', label: '풀이' }
-
-  const renderPrimary = () => {
-    if (problem.type === 'graph') return <GraphView problem={problem} />
-    if (problem.type === 'application') return <AnimationView problem={problem} />
-    return <FormulaView problem={problem} difficulty={difficulty} />
-  }
-
-  const renderSecondary = () => {
-    if (problem.type === 'formula') return <GraphView problem={problem} />
-    if (problem.type === 'application') return <AnimationView problem={problem} />
-    return <FormulaView problem={problem} />
-  }
+  const guide = (() => {
+    const typeGuides = guideText[problem.type] ?? guideText.formula
+    return typeGuides[difficulty] ?? typeGuides.default ?? typeGuides.midway ?? ''
+  })()
 
   return (
     <div className="container result screen">
+      {/* ── 헤더 ── */}
       <div className="result-head">
         <div className="rh-thumb">{problem.thumb}</div>
         <div className="rh-info">
@@ -93,77 +61,93 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
         </button>
       </div>
 
-      <div className="result-grid">
-        <div className="card viz stack stack-1">
+      {/* ── 상단 3열 그리드 ── */}
+      <div className="result-top-grid">
+        {/* Col 1: 문제 카드 */}
+        <div className="card result-problem-card stack stack-1">
           <div className="viz-head">
-            <div className="vt"><span className="vi"><Icon name={vizMeta.icon} size={16} /></span> {vizMeta.label}</div>
+            <div className="vt">
+              <span className="vi"><Icon name="layers" size={16} /></span>
+              문제
+            </div>
+            <span className="kbd">{problem.fname}</span>
+          </div>
+          <div className="shot-body" style={{ borderRadius: 0 }}>
+            <div className="qno">{problem.qno}</div>
+            <div className="qtext">
+              {problem.qtext && <span>{problem.qtext} </span>}
+              {problem.qtextLatex && <Katex tex={problem.qtextLatex} display={false} />}
+              {problem.qtail && <span> {problem.qtail}</span>}
+              {problem.qtail2 && <><br /><span>{problem.qtail2}</span></>}
+              {problem.qtextLatex2 && <><br /><Katex tex={problem.qtextLatex2} display={false} /></>}
+            </div>
+          </div>
+        </div>
+
+        {/* Col 2: 막힌 지점 설명 */}
+        <div className="card panel stack stack-2" style={{ padding: 20 }}>
+          <div className="panel-title">
+            <span className="pi"><Icon name="target" size={17} /></span>
+            학생의 막힌 지점에 맞춘 설명
+          </div>
+          <div className="stuck-note">
+            <span className="si"><Icon name="bulb" size={18} /></span>
+            <p><RichText text={stuckText} /></p>
+          </div>
+        </div>
+
+        {/* Col 3: 단계별 풀이 안내 */}
+        <div className="card panel stack stack-3" style={{ padding: 20 }}>
+          <div className="panel-title">
+            <span className="pi"><Icon name="layers" size={17} /></span>
+            단계별 풀이
+          </div>
+          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7 }}>
+            {guide}
+          </p>
+          {problem.steps.length > 0 && (
+            <div className="step-overview">
+              {problem.steps.map((s, i) => (
+                <div key={i} className="step-overview-item">
+                  <span className="step-ov-num">{i + 1}</span>
+                  <span className="step-ov-label">{s.summary || s.desc.slice(0, 28) + (s.desc.length > 28 ? '…' : '')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 하단: 그래프·애니메이션 (formula 제외) ── */}
+      {problem.type !== 'formula' && (
+        <div className="card viz stack stack-4 result-viz-section">
+          <div className="viz-head">
+            <div className="vt">
+              <span className="vi"><Icon name={vizMeta.icon} size={16} /></span>
+              {vizMeta.label}
+            </div>
             <span className="kbd">{problem.type}.view</span>
           </div>
           <div className="viz-body">
-            {renderPrimary()}
-          </div>
-        </div>
-
-        <div className="side">
-          <div className="card panel stack stack-2">
-            <div className="panel-title"><span className="pi"><Icon name="target" size={17} /></span> 학생의 막힌 지점에 맞춘 설명</div>
-            <div className="stuck-note">
-              <span className="si"><Icon name="bulb" size={18} /></span>
-              <p><RichText text={stuckText} /></p>
-            </div>
-          </div>
-
-          <div className="card panel stack stack-3">
-            <div className="panel-title"><span className="pi"><Icon name="layers" size={17} /></span> 단계별 풀이</div>
-            {problem.type === 'formula' ? (
-              difficulty === 'midway' ? (
-                <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
-                  왼쪽에서 단계를 하나씩 열어보세요. 이해가 안 되는 단계는 '심화 설명'을 요청하면 더 쉽게 풀어드려요.
-                </p>
-              ) : (
-                <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
-                  왼쪽에서 '다음 단계' 버튼을 눌러 한 단계씩 직접 전개해 보세요.
-                  스스로 다음 식을 예상해 본 뒤 확인하면 훨씬 오래 기억에 남아요.
-                </p>
-              )
-            ) : (
-              <StepsList steps={problem.steps} />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 보조 시각화 토글 영역 */}
-      <div className="secondary-viz-bar stack stack-4">
-        <button
-          className={`btn btn-viz-toggle${showSecondary ? ' active' : ''}`}
-          disabled={!secondaryMeta.hasData}
-          onClick={() => setShowSecondary((s) => !s)}
-          title={secondaryMeta.hasData ? '' : '이 문제 유형에서는 보조 시각화 데이터가 없어요'}
-        >
-          <Icon name={secondaryMeta.icon} size={15} />
-          {showSecondary ? '닫기' : secondaryMeta.label}
-          <Icon name={showSecondary ? 'arrowL' : 'arrow'} size={13} />
-        </button>
-        {!secondaryMeta.hasData && (
-          <span className="muted" style={{ fontSize: 12.5 }}>이 문제는 보조 시각화 데이터가 없어요</span>
-        )}
-      </div>
-
-      {showSecondary && secondaryMeta.hasData && (
-        <div className="card viz secondary-viz-panel">
-          <div className="viz-head">
-            <div className="vt">
-              <span className="vi"><Icon name={secondaryVizMeta.icon} size={16} /></span>
-              {secondaryVizMeta.label}
-            </div>
-            <span className="kbd">secondary.view</span>
-          </div>
-          <div className="viz-body">
-            {renderSecondary()}
+            {problem.type === 'graph' && <GraphView problem={problem} />}
+            {problem.type === 'application' && <AnimationView problem={problem} />}
           </div>
         </div>
       )}
+
+      {/* ── 하단: 단계별 수식 풀이 (전체 너비) ── */}
+      <div className="card result-steps-section stack stack-4">
+        <div className="viz-head">
+          <div className="vt">
+            <span className="vi"><Icon name="layers" size={16} /></span>
+            단계별 수식 풀이
+          </div>
+          <span className="kbd">formula.steps</span>
+        </div>
+        <div className="result-steps-body">
+          <FormulaView problem={problem} difficulty={difficulty} />
+        </div>
+      </div>
 
       <ChatPanel problem={problem} />
     </div>

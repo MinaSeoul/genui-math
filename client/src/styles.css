@@ -1357,11 +1357,42 @@ body.force-visible .fade {
   border: 1px solid var(--line);
 }
 
+/* 구 result-grid는 유지 (호환용, 실제로는 result-top-grid 사용) */
 .result-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
+}
+
+/* 새 3열 상단 그리드 */
+.result-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 20px;
+}
+
+.result-problem-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.result-viz-section {
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.result-steps-section {
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.result-steps-body {
+  padding: 24px;
 }
 
 /* viz card */
@@ -1633,16 +1664,16 @@ body.force-visible .fade {
 }
 
 .fstep .num {
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   background: var(--surface-3);
   color: var(--text-2);
   display: grid;
   place-items: center;
   font-family: var(--mono);
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 800;
+  font-size: 15px;
   flex-shrink: 0;
   transition: all 0.3s;
 }
@@ -1657,15 +1688,29 @@ body.force-visible .fade {
   min-width: 0;
 }
 
+.fstep-summary {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+  margin-bottom: 7px;
+  line-height: 1.3;
+}
+@media (min-width: 768px) {
+  .fstep-summary {
+    font-size: 16px;
+  }
+}
+
 .fstep .fc .desc {
-  font-size: 14px;
+  font-size: 14.5px;
   color: var(--text-2);
-  line-height: 1.6;
-  margin-bottom: 9px;
+  line-height: 1.65;
+  margin-bottom: 10px;
 }
 @media (min-width: 768px) {
   .fstep .fc .desc {
-    font-size: 15px;
+    font-size: 15.5px;
   }
 }
 
@@ -1679,11 +1724,11 @@ body.force-visible .fade {
 
 .fstep .fc .math-box .katex {
   color: #e9edf4;
-  font-size: 18px;
+  font-size: 1.25em;
 }
 
 .katex {
-  font-size: 1.15em;
+  font-size: 1.18em;
 }
 
 .fstep .fc .note {
@@ -2065,6 +2110,69 @@ body.force-visible .fade {
 }
 
 /* ============================================================
+   Step overview (Col 3 미니 목차)
+   ============================================================ */
+.step-overview {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.step-overview-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.step-ov-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.step-ov-label {
+  font-size: 12.5px;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   Desmos inline graph (단계 내 이차부등식 그래프)
+   ============================================================ */
+.desmos-inline-wrap {
+  margin-top: 14px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #0a0c10;
+}
+
+.desmos-inline-label {
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+}
+
+.desmos-inline-graph {
+  width: 100%;
+  height: 280px;
+}
+
+/* ============================================================
    Responsive — iPad portrait & small
    ============================================================ */
 @media (max-width: 980px) {
@@ -2077,6 +2185,10 @@ body.force-visible .fade {
   }
 
   .result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .result-top-grid {
     grid-template-columns: 1fr;
   }
 

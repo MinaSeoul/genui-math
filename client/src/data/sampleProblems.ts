@@ -13,6 +13,10 @@ export interface SampleStep {
   latex: string
   note?: string
   keyFormula?: string
+  summary?: string
+  graphType?: string
+  expression?: string
+  satisfiedRange?: string[]
 }
 
 export interface GraphConfig {

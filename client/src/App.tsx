@@ -266,6 +266,7 @@ function App() {
         {phase === 'generating' && (
           <LoadingScreen
             mode="generate"
+            problemType={analysisResult?.problemType ?? (sampleProblem?.type)}
             onDone={isRealUpload ? () => {} : () => setPhase('result')}
           />
         )}

@@ -6,6 +6,10 @@ export interface Step {
   latex: string
   note?: string
   keyFormula?: string
+  summary?: string
+  graphType?: 'quadratic_inequality'
+  expression?: string
+  satisfiedRange?: string[]
 }
 
 export interface FormulaVisualData {

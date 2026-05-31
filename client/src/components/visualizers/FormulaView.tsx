@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Icon from '../icons'
 import Katex from '../shared/Katex'
 import RichText from '../shared/RichText'
+import DesmosInlineGraph from './DesmosInlineGraph'
 import type { Problem, DifficultyType } from '../../data/sampleProblems'
 
 interface FormulaViewProps {
@@ -23,11 +24,41 @@ function KeyFormulaBox({ formula }: { formula: string }) {
   )
 }
 
+function StepContent({
+  s,
+  visible,
+}: {
+  s: Problem['steps'][number]
+  visible: boolean
+  isCur?: boolean
+}) {
+  return (
+    <>
+      {s.summary && (
+        <div className="fstep-summary">{s.summary}</div>
+      )}
+      <div className="desc"><RichText text={s.desc} /></div>
+      {visible && s.latex && (
+        <div className="math-box"><Katex tex={s.latex} /></div>
+      )}
+      {visible && s.keyFormula && <KeyFormulaBox formula={s.keyFormula} />}
+      {visible && s.graphType === 'quadratic_inequality' && s.expression && s.satisfiedRange && (
+        <DesmosInlineGraph
+          expression={s.expression}
+          satisfiedRange={s.satisfiedRange}
+        />
+      )}
+      {visible && s.note && (
+        <div className="note"><Icon name="check" size={14} /> <RichText text={s.note} /></div>
+      )}
+    </>
+  )
+}
+
 const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
   const steps = problem.steps
   const isMidway = difficulty === 'midway'
 
-  // midway 모드: 점진적 공개
   const [revealed, setRevealed] = useState(1)
   const [done, setDone] = useState(false)
   const [explains, setExplains] = useState<StepExplanation[]>(
@@ -35,7 +66,6 @@ const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
   )
   const stepRefs = useRef<(HTMLDivElement | null)[]>([])
 
-  // 일반 모드: 기존 prev/next
   const [shown, setShownNormal] = useState(1)
 
   useEffect(() => {
@@ -105,16 +135,8 @@ const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
               >
                 <div className="num">{i + 1}</div>
                 <div className="fc">
-                  <div className="desc"><RichText text={s.desc} /></div>
-                  {s.latex && (
-                    <div className="math-box"><Katex tex={s.latex} /></div>
-                  )}
-                  {s.keyFormula && <KeyFormulaBox formula={s.keyFormula} />}
-                  {s.note && (
-                    <div className="note"><Icon name="check" size={14} /> <RichText text={s.note} /></div>
-                  )}
+                  <StepContent s={s} visible={true} />
 
-                  {/* 심화 설명 영역 */}
                   {exp.loading && (
                     <div className="step-explain loading-explain">
                       <div className="typing"><i /><i /><i /></div>
@@ -128,7 +150,6 @@ const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
                     </div>
                   )}
 
-                  {/* 현재 단계(마지막 공개)에만 두 버튼 표시 */}
                   {isCur && (
                     <div className="midway-btns">
                       <button
@@ -162,7 +183,7 @@ const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
     )
   }
 
-  // ── 일반 UX (기존 이전/다음 버튼) ──
+  // ── 일반 UX (이전/다음 버튼) ──
   const normalDone = shown >= steps.length
   return (
     <div>
@@ -174,14 +195,7 @@ const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
             <div key={i} className={'fstep' + (visible ? ' shown' : '') + (isCur ? ' cur' : '')}>
               <div className="num">{i + 1}</div>
               <div className="fc">
-                <div className="desc"><RichText text={s.desc} /></div>
-                {visible && s.latex && (
-                  <div className="math-box"><Katex tex={s.latex} /></div>
-                )}
-                {visible && s.keyFormula && <KeyFormulaBox formula={s.keyFormula} />}
-                {visible && s.note && (
-                  <div className="note"><Icon name="check" size={14} /> <RichText text={s.note} /></div>
-                )}
+                <StepContent s={s} visible={visible} />
               </div>
             </div>
           )
