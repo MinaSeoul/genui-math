@@ -16,26 +16,52 @@ const ChatPanel = ({ problem }: ChatPanelProps) => {
   const bodyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    setMessages([{ role: 'ai', text: chat.hello }])
+    setAsked([])
+    setInput('')
+  }, [problem.id, chat.hello])
+
+  useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight
   }, [messages, typing])
 
-  const reply = (q: string) => {
-    const r = (chat.replies && (chat.replies[q] || chat.replies._default)) || '좋은 질문이에요. 풀이 흐름을 다시 한 번 천천히 따라가 볼까요?'
-    setTyping(true)
-    const delay = 650 + Math.min(1400, r.length * 14)
-    setTimeout(() => {
-      setTyping(false)
-      setMessages((m) => [...m, { role: 'ai', text: r }])
-    }, delay)
-  }
-
-  const send = (text?: string) => {
+  const send = async (text?: string) => {
     const q = (text != null ? text : input).trim()
     if (!q || typing) return
+
+    const prevMessages = messages
     setMessages((m) => [...m, { role: 'me', text: q }])
     setInput('')
     setAsked((a) => [...a, q])
-    reply(q)
+    setTyping(true)
+
+    try {
+      const problemText = [problem.qtext, problem.qtextLatex, problem.qtail, problem.qtail2]
+        .filter(Boolean)
+        .join(' ')
+        .trim()
+
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stage: 'chat',
+          problemText,
+          problemType: problem.type,
+          userMessage: q,
+          chatHistory: prevMessages,
+        }),
+      })
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      const data = (await res.json()) as { reply: string }
+      setTyping(false)
+      setMessages((m) => [...m, { role: 'ai', text: data.reply }])
+    } catch {
+      setTyping(false)
+      setMessages((m) => [...m, { role: 'ai', text: '잠시 후 다시 시도해 주세요.' }])
+    }
   }
 
   const remaining = chat.suggestions.filter((s) => !asked.includes(s))

@@ -4,7 +4,7 @@ import type {
   GenerateSolutionResponse,
   ProblemType,
 } from '../schemas/mathSchema.js'
-import { buildAnalyzePrompt, buildSolvePrompt } from '../prompts/mathPrompt.js'
+import { buildAnalyzePrompt, buildChatPrompt, buildSolvePrompt } from '../prompts/mathPrompt.js'
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-haiku-4-5-20251001'
@@ -63,6 +63,32 @@ export async function analyzeImage(imageBase64: string): Promise<AnalyzeImageRes
   } catch (error) {
     throw new Error(`analyzeImage failed: ${error instanceof Error ? error.message : String(error)}`)
   }
+}
+
+export async function generateChatReply(
+  problemText: string,
+  userMessage: string,
+  chatHistory: { role: string; text: string }[],
+): Promise<{ reply: string }> {
+  const history = chatHistory[0]?.role === 'ai' ? chatHistory.slice(1) : chatHistory
+
+  const claudeMessages: { role: 'user' | 'assistant'; content: string }[] = []
+  for (const msg of history) {
+    claudeMessages.push({
+      role: msg.role === 'me' ? 'user' : 'assistant',
+      content: msg.text,
+    })
+  }
+  claudeMessages.push({ role: 'user', content: userMessage })
+
+  const rawText = await callClaude({
+    model: MODEL,
+    max_tokens: 500,
+    system: buildChatPrompt(problemText),
+    messages: claudeMessages,
+  })
+
+  return { reply: rawText.trim() }
 }
 
 export async function generateSolution(
