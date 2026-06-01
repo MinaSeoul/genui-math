@@ -35,13 +35,15 @@ export function buildAnalyzePrompt(): string {
   "problemType": "formula",
   "problemText": "이미지에 적힌 문제 전체 텍스트(한국어 그대로, 수식은 LaTeX로 변환)",
   "latex": "주요 수식을 LaTeX로 표현 (예: f(x) = x^2 - 2x + 1)",
-  "confidence": 90
+  "confidence": 90,
+  "problemSummary": "과목명 - 문제 유형 요약 (예: 대수 - 로그방정식, 공통수학1 - 이차부등식, 공통수학2 - 함수의 극값)"
 }
 
 규칙:
 - problemText: 이미지에 보이는 텍스트를 정확히 그대로 복사, 한국어 보존. 수학 수식은 반드시 LaTeX 형식으로 변환해서 출력하세요. 인라인 수식은 $...$로, 블록 수식은 $$...$$로 감싸세요. 예: (1/3^15)^(1/n) → $\\\\left(\\\\frac{1}{3^{15}}\\\\right)^{\\\\frac{1}{n}}$
 - latex: 주요 수식만 LaTeX 표기로 변환; 표준 LaTeX 표기법 사용
 - confidence: 분류 확신도를 정수(0~100)로 표현 (90 이상=매우 명확, 70~89=대체로 명확, 70 미만=모호하거나 이미지 불선명)
+- problemSummary: "과목명 - 주제" 형식으로 한국어 요약. 과목명은 고등학교 수학 교육과정 기준 (공통수학1, 공통수학2, 대수, 미적분, 확률과통계, 기하 중 하나), 주제는 구체적인 문제 유형 (예: 지수방정식, 이차부등식, 함수의 극값, 확률 계산 등)
 - JSON 이스케이프 규칙: LaTeX 명령어의 역슬래시(\\)는 JSON 문자열 안에서 반드시 \\\\(이중 역슬래시)로 출력. 예: \\frac → \\\\frac, \\sqrt → \\\\sqrt, \\left → \\\\left
 - 반드시 JSON만 출력. 다른 텍스트 없음.`
 }
@@ -65,12 +67,16 @@ const VISUAL_DATA_INSTRUCTIONS: Record<ProblemType, string> = {
 }`,
   graph: `"visualData": {
   "type": "graph",
-  "expression": "Desmos용 LaTeX 함수식, 예: y = x^2 - 2x - 3",
-  "domain": [minX, maxX],
-  "roots": [x1, x2],
-  "vertex": [vx, vy]
+  "expression": "Desmos용 LaTeX 함수식, 반드시 y = f(x) 형태 (최종 계산된 수치 대입, 예: y = x^2 - 4x + 3)",
+  "restrictedDomain": "정의역 제한 조건 (Desmos 조건식, 예: x > 0, 0 \\\\le x \\\\le 3). 제한 없으면 생략",
+  "vertex": [vx, vy],
+  "extremumLabel": "최솟값 또는 최댓값 표기 문자열 (예: 최솟값 = -1, 최댓값 = 5). 없으면 생략",
+  "roots": [x1, x2]
 }
-roots 또는 vertex가 존재하지 않거나 문제에서 관련 없으면 생략.`,
+주의:
+- expression은 반드시 최종 수치(k=2 등 풀이로 얻은 값)를 대입한 결과로 작성할 것. 미지수 k가 남아 있으면 안 됨.
+- 합성함수에서 치환 후 그래프를 그릴 경우, 치환 변수를 x로 교체하여 y = f(x) 형태로 작성 (예: t = (1/2)^x 치환 → y = x^2 - 4x + 3, x > 0).
+- vertex, roots, extremumLabel, restrictedDomain은 존재하지 않거나 관련 없으면 생략.`,
   application: `"visualData": {
   "type": "application",
   "rate": <수치 비율>,
@@ -111,6 +117,19 @@ ${problemText}
 - 이항, 통분, 공통인수 묶기 등 모든 중간 단계를 명시적으로 표현
 - 최종 답은 가장 간단한 정수 또는 분수 형태로 표현 (예: x = -1/2, x = -0.5로 쓰지 말 것)
 
+단계별 함수 그래프 시각화 지침:
+아래 경우에 해당하는 단계에는 반드시 다음 두 필드를 추가할 것:
+  "graphType": "function",
+  "expression": "<Desmos 호환 LaTeX 수식, 반드시 y = ... 형태로, x를 독립변수로 사용>"
+
+추가해야 하는 경우:
+1. 치환(substitution) 도입 단계: 합성함수의 안쪽 함수를 t = g(x)로 치환할 때, g(x)의 그래프(y = g(x))를 추가해 t의 범위를 시각적으로 보여줄 것
+   예) t = (1/2)^x로 치환 → "expression": "y = \\left(\\frac{1}{2}\\right)^{x}"
+2. 치환 변수의 범위 확인 단계: x의 전체 범위에서 t = g(x)가 어떤 값을 갖는지 그래프로 보여줄 때
+3. 지수·로그·삼각함수의 그래프 특성이 풀이의 핵심인 단계
+
+주의: expression은 반드시 y = ... 형태의 Desmos LaTeX이어야 하며, 숫자 분수는 \\frac으로, 지수는 ^{}으로 표기할 것. 상수 k처럼 문제에서 구해야 하는 미지수는 expression에 포함하지 말 것.
+
 이차부등식 특별 지침 (문제가 ax²+bx+c > 0, ≥ 0, < 0, ≤ 0 형태를 포함하는 경우):
 - 해의 범위를 결정하는 단계에 반드시 다음 추가 필드를 포함할 것:
   * "graphType": "quadratic_inequality" (고정값)
@@ -128,7 +147,7 @@ ${problemText}
       "desc": "이 단계에서 무엇을 하는지, 왜 하는지 한국어로 설명",
       "latex": "이 단계에서 계산한 LaTeX 수식 (설명만으로 충분하면 빈 문자열)",
       "note": "이 학생에게 도움이 되는 선택적 한국어 힌트나 통찰 (불필요하면 생략)",
-      "keyFormula": "이 단계에서 핵심적으로 적용된 공식을 LaTeX로 표현 (예: x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}). 특별한 공식이 없으면 생략"
+      "keyFormula": "이 단계에서 사용한 수학 공식의 이름과 일반형을 LaTeX로 표현. 반드시 문제 고유의 수치 없이 일반식으로 쓸 것. 예: 완전제곱식 a^2 - 2ab + b^2 = (a-b)^2, 근의 공식 x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}, 로그 성질 \\log_a MN = \\log_a M + \\log_a N. 일반적으로 알려진 공식이 없는 단계는 생략"
     }
   ],
   ${VISUAL_DATA_INSTRUCTIONS[problemType]},
@@ -141,6 +160,8 @@ ${problemText}
   예) "근과 계수의 관계에서 $\\\\alpha + \\\\beta = 5$임을 이용한다"
 - 3~6단계 포함; 각 단계는 풀이를 실질적으로 진전시켜야 함
 - latex는 유효한 LaTeX 형식으로 (\\\\frac, ^, _, \\\\sqrt 등 사용)
+- latex 필드에서 여러 계산 단계를 나열할 때 \\Rightarrow(⇒) 등의 화살표로 가로로 연결하지 말 것. 반드시 LaTeX 줄바꿈(\\\\\\\\)으로 세로로 나열할 것. 예: -k^2+3=-1 \\\\\\\\ k^2=4 \\\\\\\\ k=\\\\pm 2 \\\\\\\\ k=2
+- note는 반드시 한 문장(30자 이내)으로 작성. 줄바꿈 없이 핵심 포인트만 간결하게.
 - JSON 이스케이프 규칙: LaTeX 명령어의 역슬래시(\\)는 JSON 문자열 안에서 반드시 \\\\(이중 역슬래시)로 출력. 예: \\frac → \\\\frac, \\sqrt → \\\\sqrt, \\alpha → \\\\alpha, \\left → \\\\left
 - 반드시 JSON만 출력. 다른 텍스트 없음.`
 }

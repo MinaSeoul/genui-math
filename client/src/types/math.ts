@@ -21,9 +21,11 @@ export interface FormulaVisualData {
 export interface GraphVisualData {
   type: 'graph'
   expression: string
-  domain: [number, number]
+  domain?: [number, number]
   roots?: number[]
   vertex?: [number, number]
+  restrictedDomain?: string
+  extremumLabel?: string
 }
 
 export interface ApplicationVisualData {
@@ -42,6 +44,7 @@ export interface AnalysisResult {
   problemText: string
   latex: string
   confidence?: number
+  problemSummary?: string
 }
 
 export interface SolutionResult {

@@ -73,10 +73,6 @@ const DiagnoseScreen = ({ problem, selected, setSelected, onContinue }: Diagnose
                 <h3>{problem.typeLabel}</h3>
                 <p>{problem.typeDesc}</p>
               </div>
-              <div className="conf">
-                <div className="pct">{problem.confidence}%</div>
-                <div className="cl">신뢰도</div>
-              </div>
             </div>
           </div>
 
@@ -89,7 +85,7 @@ const DiagnoseScreen = ({ problem, selected, setSelected, onContinue }: Diagnose
               </div>
             </div>
             <div className="opts">
-              {DIFFICULTIES.map((d) => (
+              {DIFFICULTIES.filter((d) => d.code !== 'visual').map((d) => (
                 <button key={d.code} className={'opt' + (selected === d.code ? ' sel' : '')} onClick={() => setSelected(d.code)}>
                   <span className="oi"><Icon name={d.icon} size={18} /></span>
                   <div className="ot">

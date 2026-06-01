@@ -24,9 +24,10 @@ function parseText(raw: string): React.ReactNode[] {
 
 interface RichTextProps {
   text: string
+  breakSentences?: boolean
 }
 
-const RichText = ({ text }: RichTextProps) => {
+const RichText = ({ text, breakSentences }: RichTextProps) => {
   if (!text) return null
   // Order matters: $$...$$ and \[...\] before $...$ to avoid partial matches
   const parts = String(text).split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)|\$(?!\$)[^$\n]+?\$)/g)
@@ -43,7 +44,8 @@ const RichText = ({ text }: RichTextProps) => {
         if (mParen) return <Katex key={i} tex={mParen[1]} display={false} />
         const mDollar = p.match(/^\$(?!\$)([\s\S]+?)\$$/)
         if (mDollar) return <Katex key={i} tex={mDollar[1]} display={false} />
-        return <Fragment key={i}>{parseText(p)}</Fragment>
+        const processed = breakSentences ? p.replace(/\. /g, '.\n') : p
+        return <Fragment key={i}>{parseText(processed)}</Fragment>
       })}
     </>
   )

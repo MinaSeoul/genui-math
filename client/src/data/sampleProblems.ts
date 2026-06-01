@@ -29,6 +29,9 @@ export interface GraphConfig {
   extrema?: { x: number; y: number; type: 'max' | 'min' }[]
   param?: { key: string; label: string; min: number; max: number; step: number; value: number }
   samples?: { x: number; y: number }[]
+  desmosExpression?: string
+  restrictedDomain?: string
+  extremumLabel?: string
 }
 
 export interface AnimConfig {

@@ -2,6 +2,7 @@ import Icon from '../icons'
 import Katex from '../shared/Katex'
 import RichText from '../shared/RichText'
 import GraphView from '../visualizers/GraphView'
+import DesmosGraphPanel from '../visualizers/DesmosGraphPanel'
 import FormulaView from '../visualizers/FormulaView'
 import AnimationView from '../visualizers/AnimationView'
 import ChatPanel from '../ChatPanel'
@@ -75,11 +76,17 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
           <div className="shot-body" style={{ borderRadius: 0 }}>
             <div className="qno">{problem.qno}</div>
             <div className="qtext">
-              {problem.qtext && <span>{problem.qtext} </span>}
-              {problem.qtextLatex && <Katex tex={problem.qtextLatex} display={false} />}
-              {problem.qtail && <span> {problem.qtail}</span>}
-              {problem.qtail2 && <><br /><span>{problem.qtail2}</span></>}
-              {problem.qtextLatex2 && <><br /><Katex tex={problem.qtextLatex2} display={false} /></>}
+              {problem.id === 'uploaded' ? (
+                <RichText text={problem.qtext} />
+              ) : (
+                <>
+                  {problem.qtext && <span>{problem.qtext} </span>}
+                  {problem.qtextLatex && <Katex tex={problem.qtextLatex} display={false} />}
+                  {problem.qtail && <span> {problem.qtail}</span>}
+                  {problem.qtail2 && <><br /><span>{problem.qtail2}</span></>}
+                  {problem.qtextLatex2 && <><br /><Katex tex={problem.qtextLatex2} display={false} /></>}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -92,7 +99,7 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
           </div>
           <div className="stuck-note">
             <span className="si"><Icon name="bulb" size={18} /></span>
-            <p><RichText text={stuckText} /></p>
+            <p><RichText text={stuckText} breakSentences /></p>
           </div>
         </div>
 
@@ -110,7 +117,7 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
               {problem.steps.map((s, i) => (
                 <div key={i} className="step-overview-item">
                   <span className="step-ov-num">{i + 1}</span>
-                  <span className="step-ov-label">{s.summary || s.desc.slice(0, 28) + (s.desc.length > 28 ? '…' : '')}</span>
+                  <span className="step-ov-label"><RichText text={s.summary || s.desc.slice(0, 28) + (s.desc.length > 28 ? '…' : '')} /></span>
                 </div>
               ))}
             </div>
@@ -118,8 +125,8 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
         </div>
       </div>
 
-      {/* ── 하단: 그래프·애니메이션 (formula 제외) ── */}
-      {problem.type !== 'formula' && (
+      {/* ── 하단: 그래프·애니메이션 (formula 제외, 실제 데이터 있을 때만) ── */}
+      {(problem.type === 'application' || (problem.type === 'graph' && !!problem.graph)) && (
         <div className="card viz stack stack-4 result-viz-section">
           <div className="viz-head">
             <div className="vt">
@@ -129,7 +136,16 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
             <span className="kbd">{problem.type}.view</span>
           </div>
           <div className="viz-body">
-            {problem.type === 'graph' && <GraphView problem={problem} />}
+            {problem.type === 'graph' && (
+              problem.graph?.desmosExpression
+                ? <DesmosGraphPanel
+                    expression={problem.graph.desmosExpression}
+                    restrictedDomain={problem.graph.restrictedDomain}
+                    vertex={problem.graph.vertex}
+                    extremumLabel={problem.graph.extremumLabel}
+                  />
+                : <GraphView problem={problem} />
+            )}
             {problem.type === 'application' && <AnimationView problem={problem} />}
           </div>
         </div>

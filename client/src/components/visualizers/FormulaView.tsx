@@ -3,6 +3,7 @@ import Icon from '../icons'
 import Katex from '../shared/Katex'
 import RichText from '../shared/RichText'
 import DesmosInlineGraph from './DesmosInlineGraph'
+import DesmosStepGraph from './DesmosStepGraph'
 import type { Problem, DifficultyType } from '../../data/sampleProblems'
 
 interface FormulaViewProps {
@@ -35,13 +36,16 @@ function StepContent({
   return (
     <>
       {s.summary && (
-        <div className="fstep-summary">{s.summary}</div>
+        <div className="fstep-summary"><RichText text={s.summary} /></div>
       )}
-      <div className="desc"><RichText text={s.desc} /></div>
+      <div className="desc"><RichText text={s.desc} breakSentences /></div>
       {visible && s.latex && (
         <div className="math-box"><Katex tex={s.latex} /></div>
       )}
       {visible && s.keyFormula && <KeyFormulaBox formula={s.keyFormula} />}
+      {visible && s.graphType === 'function' && s.expression && (
+        <DesmosStepGraph expression={s.expression} label={s.expression} />
+      )}
       {visible && s.graphType === 'quadratic_inequality' && s.expression && s.satisfiedRange && (
         <DesmosInlineGraph
           expression={s.expression}
@@ -49,7 +53,10 @@ function StepContent({
         />
       )}
       {visible && s.note && (
-        <div className="note"><Icon name="check" size={14} /> <RichText text={s.note} /></div>
+        <div className="note">
+          <Icon name="check" size={14} />
+          <span className="note-body"><RichText text={s.note} /></span>
+        </div>
       )}
     </>
   )

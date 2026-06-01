@@ -106,6 +106,10 @@ button {
   color: inherit;
 }
 
+.rich-bold {
+  font-weight: 800;
+}
+
 input,
 textarea {
   font-family: inherit;
@@ -1020,6 +1024,10 @@ body.force-visible .fade {
   gap: 12px;
 }
 
+.opts > :nth-child(3):last-child {
+  grid-column: 1 / -1;
+}
+
 .opt {
   text-align: left;
   padding: 16px;
@@ -1487,12 +1495,18 @@ body.force-visible .fade {
 }
 
 .stuck-note p {
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.7;
   color: #ffe6ad;
 }
 
 .stuck-note p b {
+  font-weight: 800;
+  color: #fff3d6;
+}
+
+.stuck-note .rich-bold {
+  font-weight: 800;
   color: #fff3d6;
 }
 
@@ -1703,14 +1717,14 @@ body.force-visible .fade {
 }
 
 .fstep .fc .desc {
-  font-size: 14.5px;
+  font-size: 16px;
   color: var(--text-2);
-  line-height: 1.65;
+  line-height: 1.7;
   margin-bottom: 10px;
 }
 @media (min-width: 768px) {
   .fstep .fc .desc {
-    font-size: 15.5px;
+    font-size: 17px;
   }
 }
 
@@ -1738,6 +1752,14 @@ body.force-visible .fade {
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow: hidden;
+}
+.fstep .fc .note .note-body {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .formula-controls {

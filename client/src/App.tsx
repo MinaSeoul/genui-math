@@ -60,10 +60,14 @@ function buildProblemFromAPI(
 
   if (analysis.problemType === 'graph') {
     const vd = solution?.visualData
-    if (vd?.type === 'graph') {
-      graph = buildGraph(vd.roots, vd.vertex)
-    } else {
-      graph = buildGraph([], undefined)
+    if (vd?.type === 'graph' && vd.expression) {
+      graph = {
+        desmosExpression: vd.expression,
+        restrictedDomain: vd.restrictedDomain,
+        vertex: vd.vertex,
+        extremumLabel: vd.extremumLabel,
+        roots: vd.roots ?? [],
+      }
     }
   }
 
@@ -96,7 +100,7 @@ function buildProblemFromAPI(
     qno: '업로드 문제',
     qtext: analysis.problemText,
     qtextLatex: analysis.latex,
-    title: '업로드된 수학 문제',
+    title: analysis.problemSummary ?? '업로드된 수학 문제',
     thumb: analysis.latex.slice(0, 20),
     defaultDifficulty: difficultyType ?? 'understanding',
     steps,
@@ -222,7 +226,7 @@ function App() {
         </div>
       </header>
 
-      {hookError && phase === 'upload' && (
+      {hookError && (phase === 'upload' || phase === 'diagnose') && (
         <div style={{
           background: 'rgba(255,107,107,0.12)',
           borderBottom: '1px solid rgba(255,107,107,0.4)',
