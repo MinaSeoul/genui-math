@@ -3,8 +3,10 @@ import Katex from '../shared/Katex'
 import RichText from '../shared/RichText'
 import GraphView from '../visualizers/GraphView'
 import DesmosGraphPanel from '../visualizers/DesmosGraphPanel'
+import InequalityGraphPanel from '../visualizers/InequalityGraphPanel'
 import FormulaView from '../visualizers/FormulaView'
 import AnimationView from '../visualizers/AnimationView'
+import TrigAnimView from '../visualizers/TrigAnimView'
 import ChatPanel from '../ChatPanel'
 import { DIFFICULTIES } from '../../data/sampleProblems'
 import type { Problem, DifficultyType } from '../../data/sampleProblems'
@@ -92,7 +94,7 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
         </div>
 
         {/* Col 2: 막힌 지점 설명 */}
-        <div className="card panel stack stack-2" style={{ padding: 20 }}>
+        <div className="card panel stack stack-2" style={{ padding: 20, display: 'flex', flexDirection: 'column' }}>
           <div className="panel-title">
             <span className="pi"><Icon name="target" size={17} /></span>
             학생의 막힌 지점에 맞춘 설명
@@ -125,8 +127,46 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
         </div>
       </div>
 
-      {/* ── 하단: 그래프·애니메이션 (formula 제외, 실제 데이터 있을 때만) ── */}
-      {(problem.type === 'application' || (problem.type === 'graph' && !!problem.graph)) && (
+      {/* ── 하단: 부등식 그래프 (inequalityGraph 있을 때 무조건 표시) ── */}
+      {problem.inequalityGraph && (
+        <div className="card viz stack stack-4 result-viz-section">
+          <div className="viz-head">
+            <div className="vt">
+              <span className="vi"><Icon name="graph" size={16} /></span>
+              부등식 시각화
+            </div>
+            <span className="kbd">inequality.graph</span>
+          </div>
+          <div className="viz-body">
+            <InequalityGraphPanel
+              expression={problem.inequalityGraph.expression}
+              shadeExpr={problem.inequalityGraph.shadeExpr}
+              roots={problem.inequalityGraph.roots}
+              vertex={problem.inequalityGraph.vertex}
+              satisfiedRange={(problem.inequalityGraph as any).satisfiedRange}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── 하단: 도형 애니메이션 (Claude가 trigGeometry를 반환한 경우) ── */}
+      {problem.trigGeometry && (
+        <div className="card viz stack stack-4 result-viz-section">
+          <div className="viz-head">
+            <div className="vt">
+              <span className="vi"><Icon name="motion" size={16} /></span>
+              도형 시각화
+            </div>
+            <span className="kbd">trig.desmos</span>
+          </div>
+          <div className="viz-body">
+            <TrigAnimView geometry={problem.trigGeometry} />
+          </div>
+        </div>
+      )}
+
+      {/* ── 하단: 그래프·애니메이션 (trigGeometry 없는 graph/application 문제) ── */}
+      {!problem.trigGeometry && (problem.type === 'application' || (problem.type === 'graph' && !!problem.graph)) && (
         <div className="card viz stack stack-4 result-viz-section">
           <div className="viz-head">
             <div className="vt">
@@ -143,6 +183,8 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
                     restrictedDomain={problem.graph.restrictedDomain}
                     vertex={problem.graph.vertex}
                     extremumLabel={problem.graph.extremumLabel}
+                    asymptotes={problem.graph.asymptotes}
+                    extrema={problem.graph.desmosExtrema}
                   />
                 : <GraphView problem={problem} />
             )}

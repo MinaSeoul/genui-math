@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
-import { analyzeImage, explainStep, generateChatReply, generateSolution } from '../services/claudeService.js'
-import type { DifficultyType, ProblemType } from '../schemas/mathSchema.js'
+import { analyzeImage, explainStep, generateChatReply, generateDiagram, generateSolution } from '../services/claudeService.js'
+import type { DifficultyType, ProblemType, Step } from '../schemas/mathSchema.js'
 
 export const analyzeRouter = Router()
 
@@ -43,6 +43,17 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       }
       const result = await generateChatReply(problemText, userMessage, chatHistory || [])
       res.json(result)
+    } else if (stage === 'diagram') {
+      const { problemText, steps } = req.body as {
+        problemText: string
+        steps: Step[]
+      }
+      if (!problemText || !Array.isArray(steps)) {
+        res.status(400).json({ error: 'problemText and steps are required' })
+        return
+      }
+      const result = await generateDiagram(problemText, steps)
+      res.json(result)
     } else if (stage === 'explain') {
       const { stepDesc, stepIndex } = req.body as {
         stepDesc: string
@@ -55,7 +66,7 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       const result = await explainStep(stepDesc, stepIndex)
       res.json(result)
     } else {
-      res.status(400).json({ error: 'stage must be "analyze", "solve", "explain", or "chat"' })
+      res.status(400).json({ error: 'stage must be "analyze", "solve", "diagram", "explain", or "chat"' })
     }
   } catch (error) {
     console.error('[/api/analyze]', error)

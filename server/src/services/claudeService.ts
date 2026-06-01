@@ -1,10 +1,18 @@
 import type {
   AnalyzeImageResponse,
   DifficultyType,
+  GenerateDiagramResponse,
   GenerateSolutionResponse,
   ProblemType,
+  Step,
 } from '../schemas/mathSchema.js'
-import { buildAnalyzePrompt, buildChatPrompt, buildExplainPrompt, buildSolvePrompt } from '../prompts/mathPrompt.js'
+import {
+  buildAnalyzePrompt,
+  buildChatPrompt,
+  buildDiagramPrompt,
+  buildExplainPrompt,
+  buildSolvePrompt,
+} from '../prompts/mathPrompt.js'
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-sonnet-4-6'
@@ -159,6 +167,32 @@ export async function generateSolution(
   } catch (error) {
     throw new Error(
       `generateSolution failed: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}
+
+export async function generateDiagram(
+  problemText: string,
+  steps: Step[],
+): Promise<GenerateDiagramResponse> {
+  try {
+    const rawText = await callClaude({
+      model: MODEL,
+      max_tokens: 1200,
+      messages: [
+        {
+          role: 'user',
+          content: buildDiagramPrompt(problemText, steps),
+        },
+      ],
+    })
+
+    const stripped = stripMarkdownFences(rawText).trim()
+    if (stripped === 'null' || stripped === '') return null
+    return parseJson<GenerateDiagramResponse>(stripped)
+  } catch (error) {
+    throw new Error(
+      `generateDiagram failed: ${error instanceof Error ? error.message : String(error)}`,
     )
   }
 }

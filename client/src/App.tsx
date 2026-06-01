@@ -9,14 +9,22 @@ import { PROBLEMS } from './data/sampleProblems'
 import type { Problem, DifficultyType } from './data/sampleProblems'
 import type { Phase } from './components/screens/Stepper'
 import { useProblemAnalysis } from './hooks/useProblemAnalysis'
-import type { AnalysisResult, SolutionResult } from './types/math'
+import type { AnalysisResult, SolutionResult, TrigGeometry, InequalityGraph, FormulaVisualData } from './types/math'
+
+const TRIG_KEYWORDS = ['삼각', 'sin', 'cos', 'tan', '사인', '코사인', '탄젠트']
+
+function isTrigProblem(problemText: string, summary?: string): boolean {
+  const text = (problemText + ' ' + (summary ?? '')).toLowerCase()
+  return TRIG_KEYWORDS.some(kw => text.includes(kw))
+}
 
 // API 응답을 기존 visualizer가 사용하는 Problem 형태로 변환
 function buildProblemFromAPI(
   analysis: AnalysisResult,
   solution: SolutionResult | null,
   difficultyType: DifficultyType | null,
-  fileName: string
+  fileName: string,
+  trigGeometry?: TrigGeometry | null,
 ): Problem {
   const typeLabels: Record<string, string> = {
     formula: '단순 수식형',
@@ -67,6 +75,8 @@ function buildProblemFromAPI(
         vertex: vd.vertex,
         extremumLabel: vd.extremumLabel,
         roots: vd.roots ?? [],
+        asymptotes: vd.asymptotes,
+        desmosExtrema: vd.extrema,
       }
     }
   }
@@ -90,6 +100,35 @@ function buildProblemFromAPI(
     }
   }
 
+  // 부등식: visualData에 inequalityExpr이 있으면 InequalityGraph 빌드
+  // 없더라도 steps 중 quadratic_inequality 단계가 있으면 폴백으로 빌드
+  let inequalityGraph: Problem['inequalityGraph']
+  if (analysis.problemType === 'formula') {
+    const vd = solution?.visualData as FormulaVisualData | undefined
+    if (vd?.inequalityExpr && vd.expression) {
+      inequalityGraph = {
+        expression: vd.expression,
+        shadeExpr: vd.inequalityExpr,
+        roots: vd.roots,
+        vertex: vd.vertex,
+      }
+    } else {
+      // 폴백: 단계 중 quadratic_inequality 단계 사용
+      const ineqStep = steps.find(
+        (s) => s.graphType === 'quadratic_inequality' && s.expression
+      )
+      if (ineqStep?.expression && ineqStep.satisfiedRange) {
+        inequalityGraph = {
+          expression: ineqStep.expression,
+          shadeExpr: '',          // shading 없이 satisfiedRange만 사용
+          roots: vd?.roots,
+          vertex: vd?.vertex,
+          satisfiedRange: ineqStep.satisfiedRange,
+        } as InequalityGraph & { satisfiedRange: string[] }
+      }
+    }
+  }
+
   return {
     id: 'uploaded',
     type: analysis.problemType,
@@ -107,6 +146,8 @@ function buildProblemFromAPI(
     stuck,
     graph,
     anim,
+    trigGeometry: trigGeometry ?? undefined,
+    inequalityGraph,
     chat: {
       hello: '문제를 분석했어요. 단계별 풀이를 확인해 보세요. 궁금한 점이 있으면 편하게 물어봐요!',
       suggestions: [],
@@ -127,15 +168,16 @@ function App() {
   const [uploadedFileName, setUploadedFileName] = useState('uploaded.png')
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [solutionResult, setSolutionResult] = useState<SolutionResult | null>(null)
+  const [trigGeometry, setTrigGeometry] = useState<TrigGeometry | null>(null)
 
-  const { analyzeImage, generateSolution, error: hookError } = useProblemAnalysis()
+  const { analyzeImage, generateSolution, generateDiagram, error: hookError } = useProblemAnalysis()
 
   const isRealUpload = uploadedBase64 !== null
 
   // 현재 표시할 Problem 객체 결정
   const sampleProblem = problemKey ? PROBLEMS[problemKey] : null
   const uploadedProblem = analysisResult
-    ? buildProblemFromAPI(analysisResult, solutionResult, difficulty, uploadedFileName)
+    ? buildProblemFromAPI(analysisResult, solutionResult, difficulty, uploadedFileName, trigGeometry)
     : null
   const problem = isRealUpload ? uploadedProblem : sampleProblem
 
@@ -165,6 +207,7 @@ function App() {
     setUploadedFileName('uploaded.png')
     setAnalysisResult(null)
     setSolutionResult(null)
+    setTrigGeometry(null)
     window.scrollTo({ top: 0 })
   }
 
@@ -175,6 +218,7 @@ function App() {
     setProblemKey(null)
     setAnalysisResult(null)
     setSolutionResult(null)
+    setTrigGeometry(null)
     setDifficulty(null)
     setPhase('recognizing')
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -190,19 +234,27 @@ function App() {
     }
   }
 
-  // 어려움 유형 선택 후 → 2단계 API 호출
+  // 어려움 유형 선택 후 → 2단계(풀이) + 조건부 3단계(도형) API 호출
   const handleGenerateSolution = async () => {
     if (!analysisResult || !difficulty) return
     setPhase('generating')
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
     const result = await generateSolution(analysisResult.problemText, analysisResult.problemType, difficulty)
-    if (result) {
-      setSolutionResult(result)
-      setPhase('result')
-    } else {
+    if (!result) {
       setPhase('diagnose')
+      return
     }
+
+    setSolutionResult(result)
+
+    // 삼각함수 문제이면 풀이 단계를 바탕으로 도형 좌표 생성 (3단계)
+    if (isTrigProblem(analysisResult.problemText, analysisResult.problemSummary)) {
+      const diagram = await generateDiagram(analysisResult.problemText, result.steps)
+      setTrigGeometry(diagram)
+    }
+
+    setPhase('result')
   }
 
   return (

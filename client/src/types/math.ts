@@ -1,6 +1,36 @@
 export type ProblemType = 'formula' | 'graph' | 'application'
 export type DifficultyType = 'understanding' | 'strategy' | 'midway' | 'visual'
 
+export interface TrigGeomVertex {
+  name: string
+  x: number          // 0-100 (0=left, 100=right)
+  y: number          // 0-100 (0=bottom, 100=top)
+  rightAngle?: boolean
+}
+
+export interface TrigGeomSegment {
+  from: string
+  to: string
+  label?: string
+  dashed?: boolean
+}
+
+export interface TrigGeomAngle {
+  vertex: string
+  ray1: string
+  ray2: string
+  label: string
+  highlight?: boolean
+}
+
+export interface TrigGeometry {
+  description: string
+  fill?: string[]
+  vertices: TrigGeomVertex[]
+  segments: TrigGeomSegment[]
+  angles?: TrigGeomAngle[]
+}
+
 export interface Step {
   desc: string
   latex: string
@@ -16,6 +46,22 @@ export interface FormulaVisualData {
   type: 'formula'
   roots?: number[]
   vertex?: [number, number]
+  expression?: string
+  inequalityExpr?: string
+}
+
+export interface InequalityGraph {
+  expression: string        // f(x) for the curve, e.g. "x^2-5x+4"
+  shadeExpr: string         // Desmos inequality for shading, e.g. "x^2-5x+4\\le0"
+  roots?: number[]
+  vertex?: [number, number]
+}
+
+export interface GraphExtremum {
+  x: number
+  y: number
+  type: 'max' | 'min'
+  label: string
 }
 
 export interface GraphVisualData {
@@ -26,6 +72,8 @@ export interface GraphVisualData {
   vertex?: [number, number]
   restrictedDomain?: string
   extremumLabel?: string
+  asymptotes?: string[]
+  extrema?: GraphExtremum[]
 }
 
 export interface ApplicationVisualData {

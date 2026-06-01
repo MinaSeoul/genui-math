@@ -828,6 +828,7 @@ body.force-visible .fade {
   line-height: 1.9;
   color: #1a2230;
 }
+
 @media (min-width: 768px) {
   .shot-body .qtext {
     font-size: 16.5px;
@@ -948,6 +949,7 @@ body.force-visible .fade {
   font-weight: 800;
   margin-top: 2px;
 }
+
 @media (min-width: 768px) {
   .typecard .tt h3 {
     font-size: 22px;
@@ -970,6 +972,7 @@ body.force-visible .fade {
   font-weight: 700;
   color: var(--accent);
 }
+
 @media (min-width: 768px) {
   .conf .pct {
     font-size: 30px;
@@ -1024,7 +1027,7 @@ body.force-visible .fade {
   gap: 12px;
 }
 
-.opts > :nth-child(3):last-child {
+.opts> :nth-child(3):last-child {
   grid-column: 1 / -1;
 }
 
@@ -1243,6 +1246,7 @@ body.force-visible .fade {
   color: var(--text-3);
   transition: color 0.3s;
 }
+
 @media (min-width: 768px) {
   .load-steps .ls {
     font-size: 15px;
@@ -1481,8 +1485,9 @@ body.force-visible .fade {
 
 .stuck-note {
   display: flex;
+  flex: 1;
   gap: 11px;
-  padding: 14px;
+  padding: 16px;
   border-radius: var(--radius);
   background: var(--warn-soft);
   border: 1px solid rgba(255, 201, 77, 0.28);
@@ -1495,8 +1500,8 @@ body.force-visible .fade {
 }
 
 .stuck-note p {
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 22px;
+  line-height: 1.75;
   color: #ffe6ad;
 }
 
@@ -1710,6 +1715,7 @@ body.force-visible .fade {
   margin-bottom: 7px;
   line-height: 1.3;
 }
+
 @media (min-width: 768px) {
   .fstep-summary {
     font-size: 16px;
@@ -1722,6 +1728,7 @@ body.force-visible .fade {
   line-height: 1.7;
   margin-bottom: 10px;
 }
+
 @media (min-width: 768px) {
   .fstep .fc .desc {
     font-size: 17px;
@@ -1754,6 +1761,7 @@ body.force-visible .fade {
   gap: 6px;
   overflow: hidden;
 }
+
 .fstep .fc .note .note-body {
   flex: 1;
   min-width: 0;
@@ -2096,9 +2104,11 @@ body.force-visible .fade {
 .msg.ai .bubble .md-p {
   margin-bottom: 0.5em;
 }
+
 .msg.ai .bubble .md-p:last-child {
   margin-bottom: 0;
 }
+
 .msg.ai .bubble .md-h1,
 .msg.ai .bubble .md-h2,
 .msg.ai .bubble .md-h3 {
@@ -2106,22 +2116,35 @@ body.force-visible .fade {
   margin-top: 0.6em;
   margin-bottom: 0.3em;
 }
-.msg.ai .bubble .md-h1 { font-size: 1.15em; }
-.msg.ai .bubble .md-h2 { font-size: 1.08em; }
-.msg.ai .bubble .md-h3 { font-size: 1.02em; }
+
+.msg.ai .bubble .md-h1 {
+  font-size: 1.15em;
+}
+
+.msg.ai .bubble .md-h2 {
+  font-size: 1.08em;
+}
+
+.msg.ai .bubble .md-h3 {
+  font-size: 1.02em;
+}
+
 .msg.ai .bubble strong {
   color: var(--accent);
   font-weight: 700;
 }
+
 .msg.ai .bubble .md-ul,
 .msg.ai .bubble .md-ol {
   padding-left: 1.4em;
   margin-bottom: 0.5em;
 }
+
 .msg.ai .bubble .md-li {
   margin-bottom: 0.3em;
   line-height: 1.6;
 }
+
 .msg.ai .bubble .md-code {
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -2297,6 +2320,7 @@ body.force-visible .fade {
   font-weight: 600;
   text-align: center;
 }
+
 @media (min-width: 768px) {
   .midway-done {
     font-size: 15px;
@@ -2331,6 +2355,7 @@ body.force-visible .fade {
   line-height: 1.65;
   color: var(--text-2);
 }
+
 @media (min-width: 768px) {
   .step-explain .explain-body {
     font-size: 15px;
@@ -2344,15 +2369,19 @@ body.force-visible .fade {
   .opt .ot h4 {
     font-size: 15px;
   }
+
   .opt .ot p {
     font-size: 13px;
   }
+
   .survey .q .qt h3 {
     font-size: 17.5px;
   }
+
   .stuck-note p {
-    font-size: 14px;
+    font-size: 15px;
   }
+
   .panel-title {
     font-size: 15px;
   }

@@ -1,4 +1,4 @@
-import type { DifficultyType, ProblemType } from '../schemas/mathSchema.js'
+import type { DifficultyType, ProblemType, Step } from '../schemas/mathSchema.js'
 
 export function buildAnalyzePrompt(): string {
   return `당신은 한국 고등학교 수학 문제 이미지를 분석하는 AI입니다.
@@ -62,21 +62,44 @@ const DIFFICULTY_HINTS: Record<DifficultyType, string> = {
 const VISUAL_DATA_INSTRUCTIONS: Record<ProblemType, string> = {
   formula: `"visualData": {
   "type": "formula",
-  "roots": [다항방정식 f(x)=0의 실수 근 배열 (있는 경우에만); 다항식이 아니거나 실근이 없으면 생략],
-  "vertex": [이차식인 경우 꼭짓점 [vx, vy]; 해당 없으면 생략]
-}`,
+  "roots": [다항방정식 f(x)=0의 실수 근 배열 (있는 경우에만); 실근이 없으면 생략],
+  "vertex": [이차식인 경우 꼭짓점 [vx, vy]; 해당 없으면 생략],
+  "expression": "부등식 문제인 경우: f(x) 부분만 Desmos LaTeX로 (예: x^2-5x+4, \\\\left|x-2\\\\right|-3). 부등식이 아니면 생략",
+  "inequalityExpr": "부등식 문제인 경우: 부등호 포함 완전한 Desmos LaTeX 부등식 (예: x^2-5x+4\\\\le0, 2x-3\\\\gt0, \\\\left|x-2\\\\right|\\\\lt3). 부등식이 아니면 생략"
+}
+규칙:
+- expression과 inequalityExpr은 부등식(>, <, ≥, ≤)이 핵심인 문제에서만 반드시 포함
+- inequalityExpr은 Desmos에서 직접 입력 가능한 형태로 (부호는 \\\\le \\\\ge \\\\lt \\\\gt 사용)
+- roots, vertex, expression, inequalityExpr 모두 해당 없으면 생략`,
   graph: `"visualData": {
   "type": "graph",
-  "expression": "Desmos용 LaTeX 함수식, 반드시 y = f(x) 형태 (최종 계산된 수치 대입, 예: y = x^2 - 4x + 3)",
-  "restrictedDomain": "정의역 제한 조건 (Desmos 조건식, 예: x > 0, 0 \\\\le x \\\\le 3). 제한 없으면 생략",
+  "expression": "Desmos용 LaTeX 함수식, 반드시 y = f(x) 형태 (최종 계산된 수치 대입)",
+  "restrictedDomain": "정의역 제한 조건 (Desmos 조건식, 예: 0 \\\\le x \\\\le 2\\\\pi). 없으면 생략",
+  "roots": [x1, x2, ...],
   "vertex": [vx, vy],
-  "extremumLabel": "최솟값 또는 최댓값 표기 문자열 (예: 최솟값 = -1, 최댓값 = 5). 없으면 생략",
-  "roots": [x1, x2]
+  "extremumLabel": "단일 극값 표기 문자열 (예: 최솟값 = -1). 없으면 생략",
+  "asymptotes": ["Desmos LaTeX x값", ...],
+  "extrema": [
+    {"x": 소수값, "y": 소수값, "type": "max", "label": "최댓값 (표기)"},
+    {"x": 소수값, "y": 소수값, "type": "min", "label": "최솟값 (표기)"}
+  ]
 }
-주의:
-- expression은 반드시 최종 수치(k=2 등 풀이로 얻은 값)를 대입한 결과로 작성할 것. 미지수 k가 남아 있으면 안 됨.
-- 합성함수에서 치환 후 그래프를 그릴 경우, 치환 변수를 x로 교체하여 y = f(x) 형태로 작성 (예: t = (1/2)^x 치환 → y = x^2 - 4x + 3, x > 0).
-- vertex, roots, extremumLabel, restrictedDomain은 존재하지 않거나 관련 없으면 생략.`,
+
+asymptotes 규칙 (삼각함수 그래프에 적용):
+- tan, cot, sec, csc처럼 수직 점근선이 있는 함수에만 포함
+- 표시 범위 내 점근선의 x값을 Desmos LaTeX로 작성 (예: "\\\\frac{\\\\pi}{2}", "-\\\\frac{\\\\pi}{2}")
+- sin, cos처럼 점근선이 없으면 생략
+
+extrema 규칙 (최댓값·최솟값을 구하는 문제에 적용):
+- restrictedDomain 범위 내 최댓값(max)·최솟값(min) 점을 모두 포함
+- x는 소수 근사값 (예: π/3 → 1.0472), y는 정확한 값
+- label은 "최댓값 (π/3, 2)" 형식으로 수학 표기 사용
+- 단순히 그래프 모양만 보는 문제면 생략
+
+기타 주의사항:
+- expression은 반드시 최종 수치를 대입한 결과로. 미지수가 남아 있으면 안 됨.
+- 합성함수 치환 후: 치환 변수를 x로 교체하여 y = f(x) 형태로 작성.
+- 해당 없는 필드는 모두 생략.`,
   application: `"visualData": {
   "type": "application",
   "rate": <수치 비율>,
@@ -178,6 +201,105 @@ ${stepDesc}
 - KaTeX 형식의 수식을 사용하세요. 인라인 수식은 $...$, 블록 수식은 $$...$$로 감싸세요
 - 3~5문장으로 간결하게, 하지만 핵심을 빠뜨리지 말고 설명하세요
 - 마크다운 코드 펜스 없이 텍스트만 출력하세요`
+}
+
+export function buildDiagramPrompt(problemText: string, steps: Step[]): string {
+  const stepsText = steps
+    .map((s, i) => {
+      let line = `${i + 1}단계: ${s.desc}`
+      if (s.latex) line += `\n   계산: ${s.latex}`
+      if (s.note) line += `\n   핵심: ${s.note}`
+      return line
+    })
+    .join('\n')
+
+  return `당신은 수학 도형 시각화 전문가입니다.
+
+아래 문제와 풀이를 완전히 이해한 뒤, 기하학적 상황을 수학적으로 정확한 좌표로 표현해 JSON으로 반환해주세요.
+
+## 문제
+${problemText}
+
+## 풀이 단계
+${stepsText}
+
+---
+
+## 좌표계 규칙
+
+- x: 0=왼쪽, 100=오른쪽
+- y: 0=아래, 100=위 (수학 표준 좌표계, Desmos와 동일)
+- 도형 전체가 x: 15~85, y: 15~85 범위 안에 들어오도록 배치
+
+---
+
+## 좌표 계산 원칙 (반드시 준수)
+
+### 직각 처리
+직각이 있는 꼭짓점에서 **두 변을 수직으로** 배치하는 가장 확실한 방법:
+→ 한 변은 수평(y값 고정), 다른 변은 수직(x값 고정)
+→ 예) ∠C=90°: C=(20,20), B=(80,20) [BC 수평], A=(20,80) [CA 수직]
+   검증: CA·CB = (0,60)·(60,0) = 0 → 직각 ✓
+
+### 등변 처리
+같은 길이의 변은 픽셀 수도 같게 설정
+→ AC=BC=1이면 |AC|=|BC|= 동일 픽셀 수
+
+### 선분 위의 점 계산
+풀이에서 구한 비율을 그대로 좌표에 반영
+→ D가 CA 위에 있고 CD=√2−1, CA=1이면:
+   D = C + (√2−1) × (A−C 방향 단위벡터 × 픽셀스케일)
+→ 예) C=(20,20), A=(20,80): CA 방향=(0,1), 스케일=60
+   CD = (√2−1)×60 ≈ 24.8 → D = (20, 20+24.8) = (20, 45)
+
+### angles 배열 주의사항
+- rightAngle: true 인 꼭짓점은 angles 배열에 포함하지 말 것
+  (직각 기호가 자동으로 그려지므로 호(arc)를 중복 그리지 않음)
+- 기타 각도만 angles 배열에 포함
+
+---
+
+## 올바른 예시 (∠C=90°, AC=BC=1, BD가 ∠ABC 이등분, tan22.5°=√2−1)
+
+좌표 계산 과정:
+1. C=(20,20) 기준점 설정
+2. BC=1, 수평: B=(20+60, 20)=(80,20)
+3. CA=1, 수직: A=(20, 20+60)=(20,80)
+4. CD=(√2−1)×60≈24.8, CA 방향(위쪽): D=(20, 20+24.8)=(20,45)
+5. ∠ABD: B→A 방향=atan2(60,-60)=135°, B→D 방향=atan2(25,-60)≈157.4° → 차이≈22.4°≈22.5° ✓
+
+\`\`\`json
+{
+  "description": "직각이등변삼각형 ABC (∠C=90°)에서 BD가 ∠ABC를 이등분 (∠ABD=∠DBC=22.5°)",
+  "fill": ["A", "B", "C"],
+  "vertices": [
+    {"name": "A", "x": 20, "y": 80},
+    {"name": "B", "x": 80, "y": 20},
+    {"name": "C", "x": 20, "y": 20, "rightAngle": true},
+    {"name": "D", "x": 20, "y": 45}
+  ],
+  "segments": [
+    {"from": "A", "to": "B"},
+    {"from": "A", "to": "C", "label": "AC = 1"},
+    {"from": "B", "to": "C", "label": "BC = 1"},
+    {"from": "B", "to": "D", "dashed": true, "label": "BD"},
+    {"from": "D", "to": "C", "label": "CD = \\\\sqrt{2}-1"}
+  ],
+  "angles": [
+    {"vertex": "B", "ray1": "A", "ray2": "D", "label": "22.5°", "highlight": true},
+    {"vertex": "B", "ray1": "D", "ray2": "C", "label": "22.5°"}
+  ]
+}
+\`\`\`
+
+---
+
+## 출력 형식
+
+도형이 있는 경우: 위 형식의 JSON만 반환 (\`\`\`json 코드 블록 없이 순수 JSON).
+도형이 없는 순수 계산 문제(방정식·부등식 등): null만 반환.
+JSON 이스케이프: 역슬래시는 반드시 \\\\로 이중 이스케이프.
+절대로 JSON 이외의 텍스트를 출력하지 말 것.`
 }
 
 export function buildChatPrompt(problemText: string): string {

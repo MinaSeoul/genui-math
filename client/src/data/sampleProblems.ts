@@ -1,5 +1,5 @@
-import type { DifficultyType, ProblemType } from '../types/math'
-export type { DifficultyType, ProblemType }
+import type { DifficultyType, ProblemType, TrigGeometry, InequalityGraph } from '../types/math'
+export type { DifficultyType, ProblemType, TrigGeometry, InequalityGraph }
 
 export interface Difficulty {
   code: DifficultyType
@@ -32,6 +32,8 @@ export interface GraphConfig {
   desmosExpression?: string
   restrictedDomain?: string
   extremumLabel?: string
+  asymptotes?: string[]
+  desmosExtrema?: { x: number; y: number; type: 'max' | 'min'; label: string }[]
 }
 
 export interface AnimConfig {
@@ -71,6 +73,8 @@ export interface Problem {
   chat: ChatConfig
   graph?: GraphConfig
   anim?: AnimConfig
+  trigGeometry?: TrigGeometry
+  inequalityGraph?: InequalityGraph
 }
 
 export const DIFFICULTIES: Difficulty[] = [
