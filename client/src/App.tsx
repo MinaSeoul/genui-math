@@ -206,9 +206,8 @@ function App() {
       <header className="topbar">
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button className="brand" onClick={restart} style={{ background: 'none' }}>
-            <span className="mark" />
             <span style={{ textAlign: 'left' }}>
-              <span className="name">Sol<b>vio</b></span>
+              <span className="name"><b>Solv</b><span style={{ color: 'var(--text-1)' }}>io</span></span>
               <div className="tag">GenUI 수학 풀이 도우미</div>
             </span>
           </button>

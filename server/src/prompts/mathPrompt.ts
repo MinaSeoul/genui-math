@@ -39,9 +39,10 @@ export function buildAnalyzePrompt(): string {
 }
 
 규칙:
-- problemText: 이미지에 보이는 텍스트를 정확히 그대로 복사, 한국어 보존. 수학 수식은 반드시 LaTeX 형식으로 변환해서 출력하세요. 인라인 수식은 $...$로, 블록 수식은 $$...$$로 감싸세요. 예: (1/3^15)^(1/n) → $\\left(\\frac{1}{3^{15}}\\right)^{\\frac{1}{n}}$
+- problemText: 이미지에 보이는 텍스트를 정확히 그대로 복사, 한국어 보존. 수학 수식은 반드시 LaTeX 형식으로 변환해서 출력하세요. 인라인 수식은 $...$로, 블록 수식은 $$...$$로 감싸세요. 예: (1/3^15)^(1/n) → $\\\\left(\\\\frac{1}{3^{15}}\\\\right)^{\\\\frac{1}{n}}$
 - latex: 주요 수식만 LaTeX 표기로 변환; 표준 LaTeX 표기법 사용
 - confidence: 분류 확신도를 정수(0~100)로 표현 (90 이상=매우 명확, 70~89=대체로 명확, 70 미만=모호하거나 이미지 불선명)
+- JSON 이스케이프 규칙: LaTeX 명령어의 역슬래시(\\)는 JSON 문자열 안에서 반드시 \\\\(이중 역슬래시)로 출력. 예: \\frac → \\\\frac, \\sqrt → \\\\sqrt, \\left → \\\\left
 - 반드시 JSON만 출력. 다른 텍스트 없음.`
 }
 
@@ -137,9 +138,10 @@ ${problemText}
 규칙:
 - summary, desc, note, stuckExplanation은 모두 한국어로 작성
 - desc와 note에 수식이 등장하면 반드시 KaTeX 문법 사용: 인라인은 $...$, 블록은 $$...$$
-  예) "근과 계수의 관계에서 $\\alpha + \\beta = 5$임을 이용한다"
+  예) "근과 계수의 관계에서 $\\\\alpha + \\\\beta = 5$임을 이용한다"
 - 3~6단계 포함; 각 단계는 풀이를 실질적으로 진전시켜야 함
-- latex는 유효한 LaTeX 형식으로 (\\frac, ^, _, \\sqrt 등 사용)
+- latex는 유효한 LaTeX 형식으로 (\\\\frac, ^, _, \\\\sqrt 등 사용)
+- JSON 이스케이프 규칙: LaTeX 명령어의 역슬래시(\\)는 JSON 문자열 안에서 반드시 \\\\(이중 역슬래시)로 출력. 예: \\frac → \\\\frac, \\sqrt → \\\\sqrt, \\alpha → \\\\alpha, \\left → \\\\left
 - 반드시 JSON만 출력. 다른 텍스트 없음.`
 }
 

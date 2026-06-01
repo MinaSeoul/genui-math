@@ -24,9 +24,9 @@ const UploadScreen = ({ onPick, onUpload }: UploadScreenProps) => {
   }
 
   const samples = [
-    { key: 'graph', icon: 'graph', cls: 'graph', title: '함수·그래프형', desc: '이차함수와 x축 교점 — 인터랙티브 그래프로 풀이' },
-    { key: 'application', icon: 'drop', cls: 'ico-app', title: '활용문제형', desc: '물탱크 채우기 — 애니메이션으로 상황 모델링' },
-    { key: 'formula', icon: 'func', cls: 'formula', title: '단순 수식형', desc: '이차방정식 — 단계별 수식 전개' },
+    { key: 'formula', icon: 'func', cls: 'formula', title: '단순 수식형', desc: '25ˣ − 2·5ˣ⁺¹ + 5 = 0 — 치환으로 지수방정식 풀기' },
+    { key: 'graph', icon: 'graph', cls: 'graph', title: '함수·그래프형', desc: 'f(x) = x³ − 3x 의 극값 — 인터랙티브 그래프로 극대·극소 확인' },
+    { key: 'application', icon: 'drop', cls: 'ico-app', title: '활용문제형', desc: '주사위 두 번, 합이 8 이상 — 6×6 표 애니메이션으로 경우의 수 파악' },
   ]
 
   return (

@@ -13,6 +13,36 @@ function stripMarkdownFences(text: string): string {
   return text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim()
 }
 
+// LaTeX 백슬래시 완전 보정:
+// JSON 구조 이스케이프(\\, \", \/, \uXXXX)만 보호하고
+// 그 외 모든 \는 \\로 변환 (\frac \sqrt \left \right \text \beta 등 포함)
+function fixJsonBackslashes(text: string): string {
+  const saved: string[] = []
+  const protect = (m: string): string => {
+    saved.push(m)
+    // 플레이스홀더: \x01N\x01 형식 (백슬래시 없음 → step2에서 이중처리 안 됨)
+    return `\x01${saved.length - 1}\x01`
+  }
+
+  const out = text
+    // 1) 유효한 JSON 이스케이프를 백슬래시 없는 플레이스홀더로 교체
+    .replace(/\\(["\/\\]|u[0-9a-fA-F]{4})/g, protect)
+    // 2) 남은 단독 \ 를 모두 \\로 변환 (LaTeX 명령어 보정)
+    .replace(/\\/g, '\\\\')
+
+  // 3) 플레이스홀더 복원
+  return out.replace(/\x01(\d+)\x01/g, (_, i) => saved[+i])
+}
+
+function parseJson<T>(text: string): T {
+  const stripped = stripMarkdownFences(text)
+  try {
+    return JSON.parse(stripped) as T
+  } catch {
+    return JSON.parse(fixJsonBackslashes(stripped)) as T
+  }
+}
+
 async function callClaude(body: object): Promise<string> {
   const response = await fetch(CLAUDE_API_URL, {
     method: 'POST',
@@ -59,7 +89,7 @@ export async function analyzeImage(imageBase64: string): Promise<AnalyzeImageRes
       ],
     })
 
-    return JSON.parse(stripMarkdownFences(rawText)) as AnalyzeImageResponse
+    return parseJson<AnalyzeImageResponse>(rawText)
   } catch (error) {
     throw new Error(`analyzeImage failed: ${error instanceof Error ? error.message : String(error)}`)
   }
@@ -125,7 +155,7 @@ export async function generateSolution(
       ],
     })
 
-    return JSON.parse(stripMarkdownFences(rawText)) as GenerateSolutionResponse
+    return parseJson<GenerateSolutionResponse>(rawText)
   } catch (error) {
     throw new Error(
       `generateSolution failed: ${error instanceof Error ? error.message : String(error)}`,
