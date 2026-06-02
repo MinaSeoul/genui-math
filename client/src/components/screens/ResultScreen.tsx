@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import Icon from '../icons'
 import Katex from '../shared/Katex'
 import RichText from '../shared/RichText'
@@ -7,7 +8,7 @@ import InequalityGraphPanel from '../visualizers/InequalityGraphPanel'
 import FormulaView from '../visualizers/FormulaView'
 import AnimationView from '../visualizers/AnimationView'
 import TrigAnimView from '../visualizers/TrigAnimView'
-import ChatPanel from '../ChatPanel'
+import ChatPanel, { type ChatPanelHandle } from '../ChatPanel'
 import { DIFFICULTIES } from '../../data/sampleProblems'
 import type { Problem, DifficultyType } from '../../data/sampleProblems'
 
@@ -31,6 +32,7 @@ const guideText: Record<string, Record<string, string>> = {
 }
 
 const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => {
+  const chatRef = useRef<ChatPanelHandle>(null)
   const diff = DIFFICULTIES.find((d) => d.code === difficulty) ?? DIFFICULTIES[0]
   const stuckText = (problem.stuck && (problem.stuck[difficulty] ?? problem.stuck[problem.defaultDifficulty])) ?? ''
 
@@ -188,6 +190,7 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
               problem.graph?.desmosExpression
                 ? <DesmosGraphPanel
                     expression={problem.graph.desmosExpression}
+                    formulaLatex={problem.qtextLatex || undefined}
                     restrictedDomain={problem.graph.restrictedDomain}
                     vertex={problem.graph.vertex}
                     extremumLabel={problem.graph.extremumLabel}
@@ -211,11 +214,15 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
           <span className="kbd">formula.steps</span>
         </div>
         <div className="result-steps-body">
-          <FormulaView problem={problem} difficulty={difficulty} />
+          <FormulaView
+            problem={problem}
+            difficulty={difficulty}
+            onAskStep={(text) => chatRef.current?.triggerQuestion(text)}
+          />
         </div>
       </div>
 
-      <ChatPanel problem={problem} />
+      <ChatPanel ref={chatRef} problem={problem} />
     </div>
   )
 }

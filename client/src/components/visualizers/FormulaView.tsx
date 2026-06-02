@@ -9,6 +9,7 @@ import type { Problem, DifficultyType } from '../../data/sampleProblems'
 interface FormulaViewProps {
   problem: Problem
   difficulty?: DifficultyType
+  onAskStep?: (text: string) => void
 }
 
 interface StepExplanation {
@@ -20,7 +21,7 @@ function KeyFormulaBox({ formula }: { formula: string }) {
   return (
     <div className="key-formula-box">
       <div className="kf-label">📐 적용 공식</div>
-      <Katex tex={formula} display={true} />
+      <div className="kf-body"><RichText text={formula} /></div>
     </div>
   )
 }
@@ -44,7 +45,11 @@ function StepContent({
       )}
       {visible && s.keyFormula && <KeyFormulaBox formula={s.keyFormula} />}
       {visible && s.graphType === 'function' && s.expression && (
-        <DesmosStepGraph expression={s.expression} label={s.expression} />
+        <DesmosStepGraph
+          expression={s.expression}
+          formulaLatex={s.expression}
+          parameters={s.parameters}
+        />
       )}
       {visible && s.graphType === 'quadratic_inequality' && s.expression && s.satisfiedRange && (
         <DesmosInlineGraph
@@ -62,7 +67,7 @@ function StepContent({
   )
 }
 
-const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
+const FormulaView = ({ problem, difficulty, onAskStep }: FormulaViewProps) => {
   const steps = problem.steps
   const isMidway = difficulty === 'midway'
 
@@ -125,6 +130,22 @@ const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
     }
   }
 
+  const makeAskText = (s: Problem['steps'][number], i: number) =>
+    `단계 ${i + 1}: "${s.summary || s.desc}" 이 부분이 잘 이해가 안 돼요. 더 자세히 설명해 주세요.`
+
+  const AskBtn = ({ s, i }: { s: Problem['steps'][number]; i: number }) =>
+    onAskStep ? (
+      <div className="fstep-ask-col">
+        <button
+          className="btn btn-step-ask btn-sm"
+          onClick={() => onAskStep(makeAskText(s, i))}
+        >
+          <Icon name="spark" size={14} />
+          이 단계 물어보기
+        </button>
+      </div>
+    ) : null
+
   // ── Midway 점진적 공개 UX ──
   if (isMidway) {
     return (
@@ -176,6 +197,7 @@ const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
                     </div>
                   )}
                 </div>
+                <AskBtn s={s} i={i} />
               </div>
             )
           })}
@@ -190,7 +212,7 @@ const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
     )
   }
 
-  // ── 일반 UX (이전/다음 버튼) ──
+  // ── 일반 UX (단계별 이전/다음 버튼) ──
   const normalDone = shown >= steps.length
   return (
     <div>
@@ -203,29 +225,31 @@ const FormulaView = ({ problem, difficulty }: FormulaViewProps) => {
               <div className="num">{i + 1}</div>
               <div className="fc">
                 <StepContent s={s} visible={visible} />
+
+                {visible && isCur && (
+                  <div className="step-nav-btns">
+                    <span className="step-prog">{shown} / {steps.length} 단계</span>
+                    {shown > 1 && (
+                      <button className="btn btn-quiet btn-sm" onClick={() => setShownNormal((s) => Math.max(1, s - 1))}>
+                        <Icon name="arrowL" size={15} /> 이전
+                      </button>
+                    )}
+                    {!normalDone ? (
+                      <button className="btn btn-primary btn-sm" onClick={() => setShownNormal((s) => s + 1)}>
+                        다음 단계 <Icon name="arrow" size={15} />
+                      </button>
+                    ) : (
+                      <button className="btn btn-quiet btn-sm" onClick={() => setShownNormal(1)}>
+                        <Icon name="refresh" size={15} /> 처음부터
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
+              {visible && <AskBtn s={s} i={i} />}
             </div>
           )
         })}
-      </div>
-      <div className="formula-controls">
-        <span className="step-prog">{shown} / {steps.length} 단계</span>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {shown > 1 && (
-            <button className="btn btn-quiet btn-sm" onClick={() => setShownNormal((s) => Math.max(1, s - 1))}>
-              <Icon name="arrowL" size={15} /> 이전
-            </button>
-          )}
-          {!normalDone ? (
-            <button className="btn btn-primary btn-sm" onClick={() => setShownNormal((s) => s + 1)}>
-              다음 단계 <Icon name="arrow" size={15} />
-            </button>
-          ) : (
-            <button className="btn btn-quiet btn-sm" onClick={() => setShownNormal(1)}>
-              <Icon name="refresh" size={15} /> 처음부터
-            </button>
-          )}
-        </div>
       </div>
     </div>
   )

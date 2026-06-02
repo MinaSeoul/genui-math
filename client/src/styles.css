@@ -6,8 +6,8 @@
 :root {
   --bg: #0e1014;
   --bg-2: #0b0d11;
-  --grid: rgba(255, 255, 255, 0.028);
-  --grid-strong: rgba(255, 255, 255, 0.05);
+  --grid: rgba(255, 255, 255, 0.055);
+  --grid-strong: rgba(255, 255, 255, 0.09);
 
   --surface-1: #15181f;
   --surface-2: #1b1f29;
@@ -67,8 +67,8 @@ body {
   font-family: var(--font);
   color: var(--text-1);
   background:
-    radial-gradient(1200px 700px at 18% -8%, rgba(77, 171, 247, 0.10), transparent 60%),
-    radial-gradient(1000px 600px at 92% 108%, rgba(59, 201, 219, 0.08), transparent 55%),
+    radial-gradient(1200px 700px at 18% -8%, rgba(77, 171, 247, 0.18), transparent 60%),
+    radial-gradient(1000px 600px at 92% 108%, rgba(59, 201, 219, 0.14), transparent 55%),
     var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -1728,7 +1728,7 @@ body.force-visible .fade {
 }
 
 .fstep-summary {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--accent);
   letter-spacing: -0.01em;
@@ -1738,7 +1738,7 @@ body.force-visible .fade {
 
 @media (min-width: 768px) {
   .fstep-summary {
-    font-size: 16px;
+    font-size: 17.5px;
   }
 }
 
@@ -2221,6 +2221,20 @@ body.force-visible .fade {
   background: #0a0c10;
 }
 
+.desmos-formula-bar {
+  padding: 9px 16px 8px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(77, 171, 247, 0.06);
+}
+
+.desmos-formula-bar .katex {
+  color: var(--text-1);
+  font-size: 1.1em;
+}
+
 .desmos-inline-label {
   padding: 8px 14px;
   font-size: 12px;
@@ -2296,6 +2310,12 @@ body.force-visible .fade {
   font-weight: 700;
 }
 
+/* KaTeX는 자체 폰트를 사용해 font-weight가 통하지 않으므로
+   -webkit-text-stroke로 굵기를 시각적으로 표현 */
+.rich-bold .katex {
+  -webkit-text-stroke: 0.4px currentColor;
+}
+
 /* ============================================================
    핵심 공식 박스 (key-formula-box)
    ============================================================ */
@@ -2315,8 +2335,15 @@ body.force-visible .fade {
   letter-spacing: 0.02em;
 }
 
-.key-formula-box .katex {
+.key-formula-box .kf-body {
+  font-size: 14.5px;
   color: #e9edf4;
+  line-height: 1.7;
+}
+
+.key-formula-box .kf-body .katex {
+  color: #e9edf4;
+  font-size: 1.15em;
 }
 
 /* ============================================================
@@ -2327,6 +2354,38 @@ body.force-visible .fade {
   gap: 10px;
   margin-top: 14px;
   flex-wrap: wrap;
+}
+
+.fstep-ask-col {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+}
+
+.step-nav-btns {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.btn-step-ask {
+  background: var(--cyan-soft);
+  color: var(--accent-2);
+  border: 1px solid rgba(59, 201, 219, 0.28);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-step-ask:hover:not(:disabled) {
+  background: rgba(59, 201, 219, 0.22);
+  border-color: rgba(59, 201, 219, 0.5);
 }
 
 .midway-done {

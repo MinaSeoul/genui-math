@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import Katex from '../shared/Katex'
 
 declare const Desmos: any
 
@@ -11,6 +12,7 @@ interface GraphExtremumProp {
 
 interface DesmosGraphPanelProps {
   expression: string           // e.g. "y = 2*sin(3x) + 1"
+  formulaLatex?: string        // human-readable KaTeX label, e.g. "f(x) = x^3 - 3x"
   restrictedDomain?: string    // e.g. "0 \\le x \\le 2\\pi"
   vertex?: [number, number]    // 단일 극값 (레거시)
   extremumLabel?: string       // 단일 극값 레이블 (레거시)
@@ -20,6 +22,7 @@ interface DesmosGraphPanelProps {
 
 const DesmosGraphPanel = ({
   expression,
+  formulaLatex,
   restrictedDomain,
   vertex,
   extremumLabel,
@@ -119,6 +122,11 @@ const DesmosGraphPanel = ({
 
   return (
     <div>
+      {formulaLatex && (
+        <div className="desmos-formula-bar">
+          <Katex tex={formulaLatex} display={false} />
+        </div>
+      )}
       <div className="desmos-inline-label">
         {restrictedDomain ? (
           <>

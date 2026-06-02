@@ -11,12 +11,24 @@ export interface AnalyzeImageResponse {
   hasFigure?: boolean  // 이미지에 기하 도형(삼각형, 원 등 레이블된 도형)이 있으면 true
 }
 
+export interface GraphParameter {
+  name: string
+  defaultValue: number
+  min?: number
+  max?: number
+  step?: number
+}
+
 // 2단계: 풀이 생성 응답
 export interface Step {
   desc: string
   latex: string
   note?: string
   keyFormula?: string
+  graphType?: string
+  expression?: string
+  satisfiedRange?: string[]
+  parameters?: GraphParameter[]  // unknown constants rendered as Desmos sliders
 }
 
 export interface FormulaVisualData {

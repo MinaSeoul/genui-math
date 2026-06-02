@@ -17,6 +17,7 @@ export interface SampleStep {
   graphType?: string
   expression?: string
   satisfiedRange?: string[]
+  parameters?: { name: string; defaultValue: number; min?: number; max?: number; step?: number }[]
 }
 
 export interface GraphConfig {
@@ -104,27 +105,42 @@ export const PROBLEMS: Record<string, Problem> = {
     },
     steps: [
       {
-        desc: '극값을 구하려면 먼저 도함수 $f\'(x)$를 구해요.',
+        summary: '도함수 계산',
+        desc: '극값을 구하려면 먼저 도함수 $f\'(x)$를 구해요. 도함수의 부호가 바뀌는 지점이 극값 후보입니다.',
         latex: "f'(x) = 3x^{2} - 3",
+        graphType: 'function',
+        expression: 'y = 3x^{2} - 3',
       },
       {
-        desc: "$f'(x) = 0$ 인 $x$를 구하면 극값 후보가 나옵니다.",
-        latex: "3x^{2} - 3 = 0 \\Rightarrow x^{2} = 1 \\Rightarrow x = \\pm 1",
+        summary: '극값 후보 찾기',
+        desc: "$f'(x) = 0$ 인 $x$를 구하면 극값 후보가 나옵니다. 아래 그래프에서 도함수가 $x$축과 만나는 두 점이 바로 그 후보예요.",
+        latex: "3x^{2} - 3 = 0 \\\\ x^{2} = 1 \\\\ x = \\pm 1",
+        graphType: 'function',
+        expression: 'y = 3x^{2} - 3',
       },
       {
-        desc: "증감표를 그려 $f'(x)$의 부호 변화를 확인해요. $x = -1$ 좌우에서 부호가 +→−로 바뀌므로 극대, $x = 1$ 좌우에서 −→+로 바뀌므로 극소입니다.",
+        summary: '증감표로 극값 판별',
+        desc: "증감표를 그려 $f'(x)$의 부호 변화를 확인해요. $x = -1$ 좌우에서 +→−로 바뀌므로 극대, $x = 1$ 좌우에서 −→+로 바뀌므로 극소입니다. 원래 함수 그래프에서 꼭대기·바닥 모양을 직접 확인해 보세요.",
         latex: '',
         note: '$x=-1$에서 극대, $x=1$에서 극소',
+        graphType: 'function',
+        expression: 'y = x^{3} - 3x',
       },
       {
-        desc: '$x = -1$을 대입해 극댓값을 구합니다.',
+        summary: '극댓값 계산',
+        desc: '$x = -1$을 원래 식에 대입해 극댓값을 구합니다. 그래프의 꼭대기 점 $(-1,\\,2)$를 확인하세요.',
         latex: 'f(-1) = (-1)^{3} - 3 \\times (-1) = -1 + 3 = 2',
         note: '극댓값: 2',
+        graphType: 'function',
+        expression: 'y = x^{3} - 3x',
       },
       {
-        desc: '$x = 1$을 대입해 극솟값을 구합니다.',
+        summary: '극솟값 계산',
+        desc: '$x = 1$을 대입해 극솟값을 구합니다. 그래프의 바닥 점 $(1,\\,-2)$를 확인하세요.',
         latex: 'f(1) = 1^{3} - 3 \\times 1 = 1 - 3 = -2',
         note: '극솟값: −2',
+        graphType: 'function',
+        expression: 'y = x^{3} - 3x',
       },
     ],
     stuck: {

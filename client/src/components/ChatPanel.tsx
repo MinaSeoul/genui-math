@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import Icon from './icons'
 import RichText from './shared/RichText'
 import type { Problem } from '../data/sampleProblems'
@@ -7,19 +7,31 @@ interface ChatPanelProps {
   problem: Problem
 }
 
-const ChatPanel = ({ problem }: ChatPanelProps) => {
+export interface ChatPanelHandle {
+  triggerQuestion: (text: string) => void
+}
+
+const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({ problem }, ref) => {
   const chat = problem.chat
   const [messages, setMessages] = useState([{ role: 'ai', text: chat.hello }])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
   const [asked, setAsked] = useState<string[]>([])
   const bodyRef = useRef<HTMLDivElement>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMessages([{ role: 'ai', text: chat.hello }])
     setAsked([])
     setInput('')
   }, [problem.id, chat.hello])
+
+  useImperativeHandle(ref, () => ({
+    triggerQuestion: (text: string) => {
+      wrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setTimeout(() => send(text), 300)
+    },
+  }))
 
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight
@@ -67,7 +79,7 @@ const ChatPanel = ({ problem }: ChatPanelProps) => {
   const remaining = chat.suggestions.filter((s) => !asked.includes(s))
 
   return (
-    <div className="card chat">
+    <div className="card chat" ref={wrapRef}>
       <div className="chat-head">
         <div className="ci"><Icon name="chat" size={17} /></div>
         <div className="ch">
@@ -115,6 +127,8 @@ const ChatPanel = ({ problem }: ChatPanelProps) => {
       </div>
     </div>
   )
-}
+})
+
+ChatPanel.displayName = 'ChatPanel'
 
 export default ChatPanel
