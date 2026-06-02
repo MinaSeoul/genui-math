@@ -1,5 +1,6 @@
 import type { DifficultyType, ProblemType, Step } from '../schemas/mathSchema.js'
 
+// [1단계 프롬프트] 이미지에서 문제 텍스트와 LaTeX를 추출하고, 우선순위 규칙으로 formula/graph/application 유형을 분류
 export function buildAnalyzePrompt(): string {
   return `당신은 한국 고등학교 수학 문제 이미지를 분석하는 AI입니다.
 
@@ -102,7 +103,105 @@ extrema 규칙 (최댓값·최솟값을 구하는 문제에 적용):
 - expression은 반드시 최종 수치를 대입한 결과로. 미지수가 남아 있으면 안 됨.
 - 합성함수 치환 후: 치환 변수를 x로 교체하여 y = f(x) 형태로 작성.
 - 해당 없는 필드는 모두 생략.`,
-  application: `"visualData": {
+  application: `문제 유형에 따라 아래 두 형식 중 하나를 선택하라.
+
+[유형 A] 경우의 수·칠하기·배치 문제 (영역이나 자리에 색·값·사람을 배정하는 문제):
+"visualData": {
+  "type": "application",
+  "interactive": {
+    "type": "coloring",
+    "stepIndex": <인터랙티브를 삽입할 단계 인덱스. 첫 번째 단계(인덱스 0) 직후에 배치하면 학생이 단계 설명을 읽은 뒤 바로 체험할 수 있다.>,
+    "figure": {
+      "cells": [...],
+      "gridRows": <총 행 수>,
+      "gridCols": <총 열 수>,
+      "adjacency": [["A","B"], ...]
+    },
+    "numColors": <사용 가능한 색·값의 수>,
+    "coloringOrder": ["A", "B", "C", ...],
+    "prompt": "직접 색칠해보세요! 인접한 영역은 같은 색을 쓸 수 없어요."
+  }
+}
+
+■ cells 작성 규칙 (가장 중요):
+  - row·col은 0부터 시작. 왼쪽 위 셀이 row=0, col=0.
+  - 문제 그림에서 특정 영역이 가로로 여러 칸을 차지하면 colSpan을 그 칸 수로 설정.
+  - 세로로 여러 칸을 차지하면 rowSpan을 그 칸 수로 설정.
+
+■ 구체적 예시 — 아래 그림과 같이 3열×2행, D가 A·B 아래 두 칸을 차지하는 경우:
+  ┌───┬───┬───┐
+  │ A │ B │ C │  ← row=0
+  ├───┴───┼───┤
+  │   D   │ E │  ← row=1  (D는 col=0에서 시작, colSpan=2)
+  └───────┴───┘
+  올바른 cells:
+  [
+    {"id":"A","row":0,"col":0,"colSpan":1},
+    {"id":"B","row":0,"col":1,"colSpan":1},
+    {"id":"C","row":0,"col":2,"colSpan":1},
+    {"id":"D","row":1,"col":0,"colSpan":2},
+    {"id":"E","row":1,"col":2,"colSpan":1}
+  ]
+  gridRows:2, gridCols:3
+
+■ 잘못된 예시 (절대 하지 말 것):
+  × row=2, col=1처럼 그리드 범위를 벗어난 값
+  × 동일한 row·col 좌표를 두 셀이 공유
+  × 실제 그림에 없는 빈 칸을 하나의 셀로 만들기
+
+■ adjacency: 직접 맞닿아 있는 영역 쌍만 포함 (대각선 접촉 제외).
+  위 예시: [["A","B"],["B","C"],["A","D"],["B","D"],["C","E"],["D","E"]]
+  (A와 D는 A 바로 아래가 D이므로 인접. C와 D는 C의 아래가 E이고 D와 C는 떨어져 있으므로 비인접.)
+
+■ coloringOrder: 곱의 법칙 설명에 가장 자연스러운 순서. 제약이 적은 영역부터 시작.
+  모든 영역을 반드시 포함.
+
+■ numColors 제한: 최대 7. 문제에서 사용 가능한 색·값이 7개를 초과하면 7로 설정.
+
+■ 경우를 나눠야 하는 문제 (cases 필드 사용):
+  핵심 원칙: 비인접(non-adjacent) 영역 쌍에서 두 영역이 같은 색이냐 다른 색이냐에 따라
+  나중 영역의 선택지 수가 달라지면 → 반드시 cases 배열로 경우를 분리한다.
+
+  판단 절차:
+  1. coloringOrder를 순서대로 진행할 때, 마지막 쪽 영역 중 인접하지 않은 두 영역이
+     "이미 선택된 영역들의 색"에 영향을 받아 선택지 수가 달라지는가?
+  2. 그렇다면 그 두 영역이 "같은 색인 경우"와 "다른 색인 경우"로 나눠 각각 계산한다.
+
+  구체적 예 (A/B/C/D/E 문제):
+  - C(row0,col2)와 D(row1,col0~1)는 인접하지 않음
+  - E의 선택지는 C와 D가 같은 색이면 4가지, 다른 색이면 3가지 → cases 필수
+  - 경우 1: C = D → exampleColors에 C와 D에 같은 팔레트 인덱스 지정
+  - 경우 2: C ≠ D → exampleColors에 C와 D에 다른 팔레트 인덱스 지정
+
+  출력 형식:
+  "caseIntro": "<비인접 쌍과 그 이유 설명. 예: C와 D는 인접하지 않으므로 같은 색이거나 다른 색일 수 있습니다. 이에 따라 E의 선택 가능한 색의 수가 달라지므로 두 경우로 나눕니다.>",
+  "cases": [
+    {
+      "label": "경우 1",
+      "description": "C와 D의 색이 같은 경우",
+      "formula": "5 × 4 × 3 × 1 × 4 = 240",
+      "count": 240,
+      "exampleColors": {"C": "2", "D": "2"}
+    },
+    {
+      "label": "경우 2",
+      "description": "C와 D의 색이 다른 경우",
+      "formula": "5 × 4 × 3 × 3 × 3 = 540",
+      "count": 540,
+      "exampleColors": {"C": "2", "D": "3"}
+    }
+  ],
+  "totalFormula": "240 + 540 = 780"
+
+  exampleColors 규칙 (중요):
+  - 반드시 "경우를 정의하는 비인접 셀 쌍"만 포함. 나머지 셀은 학생이 직접 칠한다.
+  - 색상은 팔레트 인덱스 문자열: "0"=빨간, "1"=파란, "2"=초록, "3"=노란, "4"=보라, "5"=주황, "6"=청록.
+  - 경우 1(같은 색): 두 셀에 동일한 인덱스 → "C":"2", "D":"2"
+  - 경우 2(다른 색): 두 셀에 다른 인덱스 → "C":"2", "D":"3"
+  - exampleColors에 포함된 셀은 학생이 변경할 수 없도록 잠금 처리된다.
+
+[유형 B] 그 외 활용문제 (속도·높이·속률 등 수치 모델링):
+"visualData": {
   "type": "application",
   "rate": <수치 비율>,
   "unit": "<단위 문자열, 예: m/s>",
@@ -112,6 +211,8 @@ extrema 규칙 (최댓값·최솟값을 구하는 문제에 적용):
 이 문제에 해당하는 필드만 포함. 관련 없는 필드는 생략.`,
 }
 
+// [2단계 프롬프트] 어려움 유형별 힌트(DIFFICULTY_HINTS)와 문제 유형별 시각화 명세(VISUAL_DATA_INSTRUCTIONS)를 조합해
+// CoT 단계별 풀이(steps)와 visualData JSON을 생성하도록 지시
 export function buildSolvePrompt(
   problemText: string,
   problemType: ProblemType,
@@ -129,6 +230,12 @@ ${problemText}
 
 이 학생의 어려움에 맞는 단계별 풀이를 생성해주세요. 반드시 아래 JSON 형식으로만 반환해. 마크다운 코드 펜스나 다른 텍스트 없이 순수 JSON만 출력할 것.
 (Return ONLY valid JSON, no markdown fences)
+
+경우의 수·칠하기 문제(application) 단계 작성 특별 규칙:
+- 단계 설명(desc)에서 "A는 B와 인접하고, B는 A·C·D와 인접하고..." 식으로 인접 관계를 텍스트·수식으로 나열하지 말 것.
+  → 학생은 위에 표시되는 인터랙티브 그림에서 인접 관계를 직접 확인할 수 있으므로, 설명에는 "그림에서 인접 관계를 직접 확인해보세요" 정도로만 언급하고 나열은 생략.
+- latex 필드에 인접 관계 목록(A-B, B-C, ...)을 수식으로 표현하지 말 것. latex는 경우의 수 계산식에만 사용.
+- 단계는 ① 문제 파악(그림 확인 안내) → ② 칠하기 전략·순서 결정 → ③ 각 영역별 경우의 수 계산 → ④ 곱의 법칙으로 최종 답 계산 흐름으로 구성.
 
 수학 풀이 원칙 (단계 구성 시 반드시 준수):
 - 풀이 전 과정에서 계수는 정수로 유지; 풀이 중간에 소수나 가분수로 변환하지 말 것
@@ -218,6 +325,7 @@ ${problemText}
 - 반드시 JSON만 출력. 다른 텍스트 없음.`
 }
 
+// [심화 설명 프롬프트] 학생이 이해하지 못한 풀이 단계를 받아 더 쉬운 설명과 예시로 재설명하도록 지시
 export function buildExplainPrompt(stepDesc: string, stepIndex: number): string {
   return `당신은 친절한 한국 고등학교 수학 선생님입니다.
 
@@ -232,6 +340,8 @@ ${stepDesc}
 - 마크다운 코드 펜스 없이 텍스트만 출력하세요`
 }
 
+// [3단계 프롬프트] 문제 텍스트와 풀이 단계를 바탕으로 기하 도형의 꼭짓점·선분·각도·채우기 좌표 JSON 생성을 지시
+// 좌표계: x/y 모두 0~100 범위, 각도는 삼각함수로 정확히 계산하도록 명세
 export function buildDiagramPrompt(problemText: string, steps: Step[]): string {
   const stepsText = steps
     .map((s, i) => {
@@ -335,6 +445,7 @@ D가 CA 위에 있고 CD:CA = r → D = C + r × (A − C)
 JSON 이외의 텍스트 절대 금지.`
 }
 
+// [채팅 프롬프트] 현재 문제 텍스트를 시스템 컨텍스트로 고정해 학생 질문에 맥락에 맞는 수식 답변을 생성하도록 지시
 export function buildChatPrompt(problemText: string): string {
   return `너는 친절한 고등학교 수학 선생님이야.
 학생이 아래 문제를 풀고 있어:

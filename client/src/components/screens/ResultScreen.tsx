@@ -8,6 +8,7 @@ import InequalityGraphPanel from '../visualizers/InequalityGraphPanel'
 import FormulaView from '../visualizers/FormulaView'
 import AnimationView from '../visualizers/AnimationView'
 import TrigAnimView from '../visualizers/TrigAnimView'
+import ColoringInteractive from '../visualizers/ColoringInteractive'
 import ChatPanel, { type ChatPanelHandle } from '../ChatPanel'
 import { DIFFICULTIES } from '../../data/sampleProblems'
 import type { Problem, DifficultyType } from '../../data/sampleProblems'
@@ -101,6 +102,14 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
               <TrigAnimView geometry={problem.trigGeometry} mini />
             </div>
           )}
+          {problem.applicationInteractive && (
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '12px 16px 8px' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Icon name="motion" size={12} /> 문제 그림 (Claude 재현)
+              </div>
+              <ColoringInteractive interactive={problem.applicationInteractive} mini />
+            </div>
+          )}
         </div>
 
         {/* Col 2: 막힌 지점 설명 */}
@@ -176,7 +185,8 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
       )}
 
       {/* ── 하단: 그래프·애니메이션 (trigGeometry 없는 graph/application 문제) ── */}
-      {!problem.trigGeometry && (problem.type === 'application' || (problem.type === 'graph' && !!problem.graph)) && (
+      {/* application + applicationInteractive 는 FormulaView 내부에 인터랙티브가 삽입되므로 별도 패널 없음 */}
+      {!problem.trigGeometry && !problem.applicationInteractive && (problem.type === 'application' || (problem.type === 'graph' && !!problem.graph)) && (
         <div className="card viz stack stack-4 result-viz-section">
           <div className="viz-head">
             <div className="vt">
@@ -218,6 +228,7 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
             problem={problem}
             difficulty={difficulty}
             onAskStep={(text) => chatRef.current?.triggerQuestion(text)}
+            applicationInteractive={problem.applicationInteractive}
           />
         </div>
       </div>

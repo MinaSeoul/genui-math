@@ -9,7 +9,7 @@ import { PROBLEMS } from './data/sampleProblems'
 import type { Problem, DifficultyType } from './data/sampleProblems'
 import type { Phase } from './components/screens/Stepper'
 import { useProblemAnalysis } from './hooks/useProblemAnalysis'
-import type { AnalysisResult, SolutionResult, TrigGeometry, InequalityGraph, FormulaVisualData } from './types/math'
+import type { AnalysisResult, SolutionResult, TrigGeometry, InequalityGraph, FormulaVisualData, ApplicationVisualData } from './types/math'
 
 const TRIG_KEYWORDS = ['삼각', 'sin', 'cos', 'tan', '사인', '코사인', '탄젠트']
 
@@ -18,7 +18,8 @@ function isTrigProblem(problemText: string, summary?: string): boolean {
   return TRIG_KEYWORDS.some(kw => text.includes(kw))
 }
 
-// API 응답을 기존 visualizer가 사용하는 Problem 형태로 변환
+// 3단계 API 응답(analysis, solution, diagram)을 하나의 Problem 객체로 통합
+// 문제 유형에 따라 graph/inequalityGraph/applicationInteractive 필드를 조건부로 구성
 function buildProblemFromAPI(
   analysis: AnalysisResult,
   solution: SolutionResult | null,
@@ -118,6 +119,15 @@ function buildProblemFromAPI(
     }
   }
 
+  // application: visualData.interactive에서 coloring 인터랙티브 데이터 파싱
+  let applicationInteractive: Problem['applicationInteractive']
+  if (analysis.problemType === 'application' && solution?.visualData?.type === 'application') {
+    const appVd = solution.visualData as ApplicationVisualData
+    if (appVd.interactive?.type === 'coloring') {
+      applicationInteractive = appVd.interactive
+    }
+  }
+
   return {
     id: 'uploaded',
     type: analysis.problemType,
@@ -136,6 +146,7 @@ function buildProblemFromAPI(
     graph,
     trigGeometry: trigGeometry ?? undefined,
     inequalityGraph,
+    applicationInteractive,
     chat: {
       hello: '문제를 분석했어요. 단계별 풀이를 확인해 보세요. 궁금한 점이 있으면 편하게 물어봐요!',
       suggestions: [],
@@ -147,11 +158,9 @@ function buildProblemFromAPI(
 function App() {
   const [phase, setPhase] = useState<Phase>('upload')
 
-  // 샘플 문제 모드
   const [problemKey, setProblemKey] = useState<string | null>(null)
   const [difficulty, setDifficulty] = useState<DifficultyType | null>(null)
 
-  // 실제 업로드 모드
   const [uploadedBase64, setUploadedBase64] = useState<string | null>(null)
   const [uploadedFileName, setUploadedFileName] = useState('uploaded.png')
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
@@ -176,7 +185,7 @@ function App() {
     return () => { clearTimeout(t); document.removeEventListener('visibilitychange', reveal) }
   }, [])
 
-  // 샘플 문제 선택
+  // 샘플 문제 카드 클릭 시 업로드 상태를 초기화하고 recognizing 페이즈로 진입
   const pick = (key: string) => {
     setProblemKey(key)
     setUploadedBase64(null)
@@ -199,7 +208,7 @@ function App() {
     window.scrollTo({ top: 0 })
   }
 
-  // 실제 이미지 업로드 → 1단계 API 호출
+  // PNG 업로드 시 1단계(이미지 분석) API를 호출하고 결과에 따라 diagnose 페이즈로 전환
   const handleUpload = async (base64: string, fileName: string) => {
     setUploadedBase64(base64)
     setUploadedFileName(fileName)
@@ -216,13 +225,12 @@ function App() {
       setAnalysisResult(result)
       setPhase('diagnose')
     } else {
-      // 오류 시 업로드 화면으로 복귀 (hookError에 메시지 저장됨)
       setUploadedBase64(null)
       setPhase('upload')
     }
   }
 
-  // 어려움 유형 선택 후 → 2단계(풀이) + 조건부 3단계(도형) API 호출
+  // 어려움 유형 선택 확정 후 2단계(풀이 생성)를 호출하고, 도형 문제면 3단계(좌표 생성)도 연달아 호출
   const handleGenerateSolution = async () => {
     if (!analysisResult || !difficulty) return
     setPhase('generating')

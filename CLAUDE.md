@@ -1,4 +1,4 @@
-# CLAUDE.md — GenUI 기반 고등학생 수학 문제 맞춤형 시각화 학습 시스템
+# CLAUDE.md — GenUI 기반 고등학생 수학 문제 맞춤형 시각화 학습 시스템 (Solvio)
 
 > 이 파일은 Claude Code가 프로젝트 전반을 이해하고 일관되게 개발할 수 있도록 작성된 가이드입니다.
 
@@ -6,7 +6,8 @@
 
 ## 프로젝트 개요
 
-**과제명:** GenUI 기반 고등학생 수학 문제 맞춤형 시각화 학습 시스템
+**과제명:** GenUI 기반 고등학생 수학 문제 맞춤형 시각화 학습 시스템  
+**앱 이름:** **Solvio**
 
 ### 핵심 목표
 
@@ -42,22 +43,23 @@
 | 역할 | 라이브러리/API | 비고 |
 |------|--------------|------|
 | UI 프레임워크 | React + TypeScript | Vite로 세팅 |
-| 스타일링 | Tailwind CSS | |
-| 수식 렌더링 | KaTeX | 브라우저 직접 실행 |
-| 함수 그래프 시각화 | Desmos API | script 태그로 로드 |
-| 활용문제 애니메이션 | Framer Motion + SVG | React 컴포넌트 내 직접 제어 |
+| 스타일링 | 커스텀 CSS (styles.css) | |
+| 수식 렌더링 | KaTeX | `shared/Katex.tsx` + `shared/RichText.tsx`로 래핑 |
+| 함수 그래프 시각화 | Desmos API | script 태그로 로드; DesmosGraphPanel·DesmosStepGraph·DesmosInlineGraph |
+| 도형 시각화 | SVG (직접 구현) | TrigAnimView.tsx — Claude 생성 좌표를 SVG로 렌더링 |
+| 칠하기 인터랙티브 | React + CSS Grid | ColoringInteractive.tsx |
+| 활용문제 애니메이션 | Framer Motion + SVG | AnimationView.tsx (샘플 문제용) |
 
 ### Backend (server)
 
 | 역할 | 라이브러리/API | 비고 |
 |------|--------------|------|
 | 서버 프레임워크 | Express | Claude API 보호용 프록시 |
-| AI 이미지 인식 + 풀이 생성 | Claude API (claude-haiku-4-5-20251001) | Vision 포함 |
+| AI 이미지 인식 + 풀이 생성 | Claude API (claude-sonnet-4-6) | Vision 포함 |
 
-### 모델 선택 이유
+### 모델 선택
 
-- `claude-haiku-4-5-20251001`: 실시간 피드백이 필요한 앱이므로 속도와 비용 효율 우선
-- 수식 인식 정확도가 부족한 경우 `claude-sonnet-4-6`으로 업그레이드 예정
+- `claude-sonnet-4-6`: 수식 인식·구조화 JSON 생성 정확도가 높아 Haiku에서 업그레이드하여 사용 중
 
 ---
 
@@ -76,156 +78,189 @@ Claude API 호출과 키 관리는 전적으로 서버에서만 이루어진다.
 
 ### 서버는 얇게 유지한다
 
-본 프로젝트는 실시간 애플리케이션이므로 (Haiku 선택 이유와 동일) 지연을 최소화해야 한다.
 서버는 단순 프록시 역할로 얇게 유지하고, claudeService는 불필요한 가공 없이
 Claude 응답을 클라이언트에 그대로 전달하는 것을 원칙으로 한다.
+(단, LaTeX 역슬래시 이스케이프 보정 등 JSON 파싱 안전 처리는 서버에서 수행)
 
 ---
 
-## 프로젝트 디렉토리 구조
+## 프로젝트 디렉토리 구조 (현재 실제 구조)
 
 ```
 genui-math/
 ├── CLAUDE.md
 ├── README.md
 ├── .gitignore
-├── package.json                  # 루트 (workspace 또는 스크립트 통합용)
+├── package.json
 │
-├── client/                       # React 웹 프론트엔드
+├── client/
+│   ├── index.html                # Desmos API script 태그 포함
 │   ├── src/
+│   │   ├── App.tsx               # phase 상태 관리 + API 오케스트레이션 + buildProblemFromAPI
+│   │   ├── main.tsx
+│   │   ├── styles.css
+│   │   │
 │   │   ├── components/
-│   │   │   ├── ImageUploader.tsx      # PNG 업로드 + 미리보기
-│   │   │   ├── DifficultySurvey.tsx   # 어려움 유형 선택 객관식 버튼
-│   │   │   ├── ResultLayout.tsx       # 유형에 따라 시각화 뷰 선택
-│   │   │   └── visualizers/
-│   │   │       ├── FormulaView.tsx    # 단순 수식형 — KaTeX 단계별 풀이
-│   │   │       ├── GraphView.tsx      # 함수·그래프형 — Desmos 그래프
-│   │   │       └── AnimationView.tsx  # 활용문제형 — Motion+SVG 애니메이션
+│   │   │   ├── screens/
+│   │   │   │   ├── UploadScreen.tsx      # PNG 업로드 + 샘플 문제 선택
+│   │   │   │   ├── DiagnoseScreen.tsx    # 어려움 유형 선택 (4개 버튼)
+│   │   │   │   ├── LoadingScreen.tsx     # 인식중/생성중 로딩 화면
+│   │   │   │   ├── ResultScreen.tsx      # 결과 화면 (시각화 + 풀이 + 챗)
+│   │   │   │   └── Stepper.tsx           # 상단 진행 단계 표시
+│   │   │   │
+│   │   │   ├── shared/
+│   │   │   │   ├── Katex.tsx             # KaTeX 렌더링 래퍼 (try-catch 포함)
+│   │   │   │   └── RichText.tsx          # $...$ / $$...$$ → KaTeX 자동 변환
+│   │   │   │
+│   │   │   ├── visualizers/
+│   │   │   │   ├── FormulaView.tsx       # 단계별 수식 풀이 (midway/일반 UX 분기)
+│   │   │   │   ├── GraphView.tsx         # SVG 이차함수 그래프 (샘플 문제용)
+│   │   │   │   ├── DesmosGraphPanel.tsx  # Desmos 인터랙티브 그래프 (API 결과용)
+│   │   │   │   ├── DesmosStepGraph.tsx   # 풀이 단계 인라인 Desmos (미지수 슬라이더 포함)
+│   │   │   │   ├── DesmosInlineGraph.tsx # 이차부등식 범위 강조 그래프
+│   │   │   │   ├── InequalityGraphPanel.tsx # 부등식 그래프 패널
+│   │   │   │   ├── TrigAnimView.tsx      # SVG 도형 시각화 (Claude 좌표 기반)
+│   │   │   │   ├── AnimationView.tsx     # 활용문제 SVG 애니메이션 (샘플 문제용)
+│   │   │   │   └── ColoringInteractive.tsx # 경우의 수·칠하기 인터랙티브 UI
+│   │   │   │
+│   │   │   ├── ChatPanel.tsx             # 문제 맥락 기반 AI 채팅 패널
+│   │   │   ├── DifficultySurvey.tsx      # 어려움 유형 버튼 컴포넌트
+│   │   │   ├── ImageUploader.tsx         # PNG 업로드 + Base64 변환
+│   │   │   ├── ResultLayout.tsx          # (레거시) 타입 기반 뷰 분기
+│   │   │   └── icons.tsx                 # SVG 아이콘 컴포넌트
+│   │   │
+│   │   ├── data/
+│   │   │   └── sampleProblems.ts         # Problem 타입 정의 + 샘플 문제 데이터
+│   │   │
 │   │   ├── hooks/
-│   │   │   └── useProblemAnalysis.ts  # 서버 /api/analyze 호출
-│   │   ├── prompts/                   # 단원별 시스템 프롬프트 (Markdown)
-│   │   │   ├── common.md              # 공통 출력 규칙 (모든 단원 공통 적용)
-│   │   │   ├── 공통수학1/
-│   │   │   │   ├── unit_다항식.md
-│   │   │   │   ├── unit_방정식.md
-│   │   │   │   ├── unit_부등식.md
-│   │   │   │   ├── unit_순열과조합.md
-│   │   │   │   └── unit_행렬.md
-│   │   │   ├── 공통수학2/
-│   │   │   │   ├── unit_도형의방정식.md
-│   │   │   │   ├── unit_집합과명제.md
-│   │   │   │   └── unit_함수.md
-│   │   │   └── 대수/
-│   │   │       ├── unit_삼각함수.md
-│   │   │       ├── unit_수열.md
-│   │   │       └── unit_지수로그.md
-│   │   ├── types/
-│   │   │   └── math.ts                # 문제 유형, 어려움 유형, 응답 타입
-│   │   ├── utils/
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── index.html
+│   │   │   └── useProblemAnalysis.ts     # 서버 /api/analyze 3단계 호출 훅
+│   │   │
+│   │   ├── prompts/                      # 단원별 시스템 프롬프트 (Markdown)
+│   │   │   ├── common.md
+│   │   │   ├── 공통수학1/ (unit_다항식.md 등 5개)
+│   │   │   ├── 공통수학2/ (unit_도형의방정식.md 등 3개)
+│   │   │   └── 대수/ (unit_삼각함수.md 등 3개)
+│   │   │
+│   │   └── types/
+│   │       └── math.ts                   # 클라이언트 타입 (서버 스키마와 동기화)
+│   │
 │   ├── vite.config.ts
 │   └── package.json
 │
-├── server/                       # Claude API 보호용 백엔드
+├── server/
 │   ├── src/
+│   │   ├── index.ts                      # Express 진입점
 │   │   ├── routes/
-│   │   │   └── analyze.ts             # /api/analyze 라우트
+│   │   │   └── analyze.ts                # POST /api/analyze (5가지 stage 처리)
 │   │   ├── services/
-│   │   │   └── claudeService.ts       # Claude Vision + API 호출
+│   │   │   └── claudeService.ts          # Claude API 호출 + LaTeX JSON 파싱
 │   │   ├── prompts/
-│   │   │   └── mathPrompt.ts          # 문제 인식/풀이 프롬프트
-│   │   ├── schemas/
-│   │   │   └── mathSchema.ts          # 응답 JSON 스키마
-│   │   └── index.ts                   # Express 진입점
-│   ├── .env                           # API 키 (git 제외)
-│   ├── .env.example                   # 키 없는 예시 (git 포함)
+│   │   │   └── mathPrompt.ts             # 5개 프롬프트 빌더 함수 (핵심 AI 로직)
+│   │   └── schemas/
+│   │       └── mathSchema.ts             # 응답 JSON 스키마 타입 정의
+│   ├── .env                              # API 키 (git 제외)
+│   ├── .env.example
 │   └── package.json
 │
-├── docs/
-│   ├── proposal.pdf
-│   ├── report.md
-│   └── screenshots/
-│
-└── examples/
-    └── sample-problems/               # 테스트용 수학 문제 PNG
+└── docs/
+    ├── proposal.pdf
+    ├── report.md
+    └── screenshots/
 ```
 
 ---
 
-## 전체 파이프라인
+## 전체 파이프라인 (5-stage 구조)
 
 ```
 [client] PNG 업로드 (ImageUploader)
     ↓
-[client] useProblemAnalysis → server /api/analyze 호출
+[client] useProblemAnalysis.analyzeImage()
+         → POST /api/analyze { stage: 'analyze', imageBase64 }
     ↓
-[server] claudeService — Claude Vision: 이미지 → 문제 텍스트 추출 + 유형 분류
+[server] claudeService.analyzeImage() — Claude Vision
+         이미지 → problemText, problemType, latex, hasFigure
+    ↓ AnalysisResult 반환
+[client] phase: 'diagnose' — DiagnoseScreen
+         학생이 어려움 유형 4가지 중 선택
     ↓
-[client] ResultLayout — 문제 유형 분기
+[client] useProblemAnalysis.generateSolution()
+         → POST /api/analyze { stage: 'solve', problemText, problemType, difficultyType }
     ↓
-[client] DifficultySurvey — 학생이 어려움 유형 선택
+[server] claudeService.generateSolution() — CoT 풀이 + 시각화 JSON
+         → steps[], visualData, stuckExplanation
+    ↓ SolutionResult 반환
     ↓
-[server] claudeService — 어려움 유형 반영 + CoT 단계별 풀이 + 시각화 JSON 생성
+[client] (조건부) hasFigure || isTrigProblem
+         → useProblemAnalysis.generateDiagram()
+         → POST /api/analyze { stage: 'diagram', problemText, steps }
     ↓
-[client] 유형별 시각화 컴포넌트 렌더링
-    ├── 단순 수식형  → FormulaView (KaTeX)
-    ├── 함수·그래프형 → GraphView (Desmos)
-    └── 활용문제형  → AnimationView (Motion+SVG)
+[server] claudeService.generateDiagram() — 도형 좌표 JSON 생성
+         → TrigGeometry | null
     ↓
-학생 맞춤 UI 출력
+[client] buildProblemFromAPI() — 3개 응답을 하나의 Problem 객체로 통합
+    ↓
+[client] phase: 'result' — ResultScreen 렌더링
+    ├── 문제 카드 (RichText + KaTeX)
+    ├── 막힌 지점 맞춤 설명 (stuckExplanation)
+    ├── 시각화 패널:
+    │   ├── formula → FormulaView + (부등식) InequalityGraphPanel
+    │   ├── graph → DesmosGraphPanel
+    │   └── application → ColoringInteractive
+    ├── (도형 있으면) TrigAnimView
+    └── ChatPanel → POST /api/analyze { stage: 'chat' }
+
+추가 인터랙션:
+- 단계 "이해 안 됨" 버튼 → POST /api/analyze { stage: 'explain' } → 심화 설명 인라인
+- ChatPanel 질문 → POST /api/analyze { stage: 'chat' } → AI 답변
 ```
+
+---
+
+## API 엔드포인트 (POST /api/analyze)
+
+| stage | 입력 | 출력 | 서버 함수 |
+|-------|------|------|----------|
+| `analyze` | imageBase64 | AnalyzeImageResponse | analyzeImage() |
+| `solve` | problemText, problemType, difficultyType | GenerateSolutionResponse | generateSolution() |
+| `diagram` | problemText, steps | TrigGeometry \| null | generateDiagram() |
+| `explain` | stepDesc, stepIndex | { explanation } | explainStep() |
+| `chat` | problemText, userMessage, chatHistory | { reply } | generateChatReply() |
 
 ---
 
 ## 문제 유형 분류
 
-고등학교 수학 문제를 아래 3가지로 분류한다.
-
 | 유형 | 설명 | 시각화 방식 |
 |------|------|------------|
-| `formula` | 방정식·부등식 등 직접 계산하는 문제 | KaTeX 단계별 수식 |
-| `graph` | 함수의 형태와 관계를 시각적으로 이해해야 하는 문제 | Desmos 인터랙티브 그래프 |
-| `application` | 문제 상황을 해석하고 수식으로 모델링하는 문제 | Framer Motion + SVG 애니메이션 |
+| `formula` | 방정식·부등식 등 직접 계산하는 문제 | KaTeX 단계별 수식 + (부등식) DesmosInlineGraph |
+| `graph` | 함수의 형태와 관계를 시각적으로 이해해야 하는 문제 | DesmosGraphPanel 인터랙티브 그래프 |
+| `application` | 경우의 수·순열·조합 등 문제 상황을 모델링하는 문제 | ColoringInteractive 칠하기 인터랙티브 |
 
 ---
 
 ## 어려움 유형 분류
 
-학생이 선택하는 어려움 유형 (DifficultySurvey 컴포넌트에서 사용):
-
-| 코드 | 설명 |
-|------|------|
-| `understanding` | 문제 자체가 무슨 말인지 모르겠음 |
-| `strategy` | 문제는 이해하지만 어떻게 풀지 모르겠음 |
-| `midway` | 풀이 중간까지는 됐는데 이후를 모르겠음 |
-| `visual` | 시각적으로 이해가 필요함 |
+| 코드 | 설명 | FormulaView UX |
+|------|------|----------------|
+| `understanding` | 문제 자체가 무슨 말인지 모르겠음 | 전체 단계 일괄 표시 |
+| `strategy` | 문제는 이해하지만 어떻게 풀지 모르겠음 | 전체 단계 일괄 표시 |
+| `midway` | 풀이 중간까지는 됐는데 이후를 모르겠음 | 한 단계씩 점진적 공개 + 심화 설명 버튼 |
+| `visual` | 시각적으로 이해가 필요함 | 전체 단계 일괄 표시 |
 
 ---
 
-## 클라이언트 프롬프트 시스템 (client/src/prompts/)
+## 프롬프트 시스템 (server/src/prompts/mathPrompt.ts)
 
-### 구조
+총 5개의 프롬프트 빌더 함수가 있으며, 이것이 AI 기능의 핵심이다.
 
-`client/src/prompts/`는 단원별 시스템 프롬프트를 Markdown 파일로 관리한다.
-Claude API 호출 시 `common.md` + 해당 단원의 `unit_*.md`를 합쳐서 system prompt로 전송하는 구조다.
-
-```
-common.md          ← 모든 단원에 공통 적용되는 출력 규칙 (KaTeX 형식 포함)
-공통수학1/unit_*.md ← 각 단원별 풀이 원칙 + 예시
-공통수학2/unit_*.md
-대수/unit_*.md
-```
-
-### 수식 출력 규칙 (공통)
-
-`common.md`에 정의된 규칙이며 모든 단원에 적용된다:
-- 인라인 수식: `$...$` 형식 (예: `$f'(x) = 0$`)
-- 블록 수식: `$$...$$` 형식 (예: `$$x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}$$`)
-- 일반 텍스트 수식 금지: `f'(x) = 0`, `α+β` 등의 형식 사용 불가
-
-클라이언트의 `RichText.tsx` 컴포넌트가 `$...$`, `$$...$$`, `\(...\)`, `\[...\]` 네 가지 형식을 모두 KaTeX로 렌더링한다.
+| 함수 | 역할 | 출력 형식 |
+|------|------|----------|
+| `buildAnalyzePrompt()` | 이미지에서 문제 추출 + 3-way 유형 분류 (우선순위 룰 기반) | JSON |
+| `buildSolvePrompt()` | 어려움 유형별 CoT 풀이 + 유형별 visualData JSON 명세 | JSON |
+| `buildDiagramPrompt()` | 풀이 단계 기반 도형 좌표 생성 (0~100 좌표계) | JSON |
+| `buildExplainPrompt()` | 특정 단계 심화 재설명 | KaTeX 텍스트 |
+| `buildChatPrompt()` | 문제 맥락 기반 채팅 시스템 프롬프트 | KaTeX 텍스트 |
 
 ---
 
@@ -238,134 +273,44 @@ ANTHROPIC_API_KEY=여기에_API_키_입력
 PORT=3001
 ```
 
-`server/.env` 파일에 위 내용을 추가한다. 이 파일은 `.gitignore`에 반드시 포함시킨다.
-`server/.env.example`에는 키 없이 변수명만 남겨서 git에 포함시킨다.
+`server/.env` 파일은 `.gitignore`에 반드시 포함. `server/.env.example`만 git에 포함.
 
-### API 호출 기본 형태 (server/services/claudeService.ts)
-
-서버에서 호출하므로 `anthropic-dangerous-direct-browser-calls` 헤더는 필요 없다.
+### 현재 사용 모델
 
 ```typescript
-const response = await fetch("https://api.anthropic.com/v1/messages", {
-  method: "POST",
-  headers: {
-    "x-api-key": process.env.ANTHROPIC_API_KEY!,
-    "anthropic-version": "2023-06-01",
-    "content-type": "application/json",
-  },
-  body: JSON.stringify({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 1000,
-    messages: [...],
-  }),
-});
+const MODEL = 'claude-sonnet-4-6'
 ```
 
-### API 호출 단계 (총 2회 요청, 서버 경유)
+### LaTeX JSON 파싱 안전 처리
 
-**1단계 — 이미지 인식 + 유형 분류**
-- 입력: Base64 PNG 이미지
-- 출력: `{ problemType, problemText, latex }` JSON
-- 프롬프트: 문제 텍스트 추출, 유형 분류, 수식은 LaTeX로 변환
-
-**2단계 — 어려움 유형 반영 + CoT 풀이 + 시각화 JSON 생성**
-- 입력: 문제 텍스트 + 문제 유형 + 학생이 선택한 `difficultyType`
-- 출력: `{ steps: [...], visualData: {...} }` JSON
-  - `steps`: 단계별 풀이 (KaTeX용)
-  - `visualData`: 그래프 수식, 강조 구간, 애니메이션 요소 등
-
-### 이미지 토큰 비용 참고
-
-- 아이패드 스크린샷 기준 해상도: 2360×1640 → API 자동 리사이즈 → 1568×1091
-- 토큰 수: 약 2,281토큰 / Haiku 4.5 기준 약 $0.00023/장
+Claude가 JSON 내 LaTeX 역슬래시를 단일 `\`로 출력하면 JSON 파싱 실패.
+`claudeService.ts`의 `fixJsonBackslashes()`가 두 단계 전략으로 자동 보정:
+1. 표준 JSON 파싱 시도
+2. 실패 시 유효 JSON 이스케이프 보호 후 단독 `\` → `\\` 변환 후 재파싱
 
 ---
 
 ## Desmos API 사용 규칙 (client)
 
-- **라이센스:** 비상업적 학교 프로젝트는 무료 키 사용 가능
-- **로드 방식:** npm 패키지 없음 → `client/index.html`에 script 태그로 직접 로드
+- **로드 방식:** `client/index.html`에 script 태그로 직접 로드
 
 ```html
-<!-- client/index.html -->
 <script src="https://www.desmos.com/api/v1.9/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
 ```
 
 - 위 키는 데모 키이며, 실제 제출 전 Desmos 사이트에서 무료 키를 발급받아 교체한다.
-- `GraphView.tsx`에서 `useRef`로 div를 참조하여 `Desmos.GraphingCalculator(el)`로 초기화한다.
-- 서버가 반환한 `visualData.expression`을 `calculator.setExpression()`으로 주입한다.
+- TypeScript에서는 `declare const Desmos: any`로 전역 선언
+- `useEffect` + `useRef`로 DOM 마운트 후 초기화, cleanup 시 `calc.destroy()`
+- Claude가 반환한 `expression`을 `calc.setExpression()`으로 주입
 
 ---
 
-## 컴포넌트별 구현 지침
+## 수식 출력 규칙
 
-### client/components/ImageUploader.tsx
-
-- PNG 파일만 허용 (accept="image/png")
-- 파일을 FileReader로 읽어 Base64로 변환
-- 업로드 후 이미지 미리보기 표시
-- Base64 데이터를 useProblemAnalysis로 전달
-
-### client/components/DifficultySurvey.tsx
-
-- 문제 유형이 결정된 뒤에만 렌더링
-- 4개 버튼: 문제 이해 / 풀이 전략 / 풀이 중간 / 시각적 이해
-- 선택된 버튼은 강조 표시, 선택 후 2단계 분석 요청 트리거
-
-### client/components/ResultLayout.tsx
-
-- 서버 응답의 `problemType`에 따라 적절한 시각화 뷰 선택
-- `formula` → FormulaView / `graph` → GraphView / `application` → AnimationView
-- 분기 로직만 담당하고 실제 렌더링은 각 View에 위임
-
-### client/components/visualizers/FormulaView.tsx (단순 수식형)
-
-- 서버가 반환한 `steps` 배열을 순서대로 렌더링
-- 각 단계는 설명 텍스트 + KaTeX 수식으로 구성
-- `react-katex`의 `BlockMath` 컴포넌트 사용
-
-### client/components/visualizers/GraphView.tsx (함수·그래프형)
-
-- `useEffect`에서 Desmos 계산기 초기화
-- 서버가 반환한 함수식과 정의역을 `calculator.setExpression()`으로 주입
-- 슬라이더, 교점 강조 등 Desmos 기본 기능 활용
-
-### client/components/visualizers/AnimationView.tsx (활용문제형)
-
-- Framer Motion의 `motion` 컴포넌트와 SVG를 조합
-- 서버가 반환한 `visualData`의 애니메이션 요소를 기반으로 단계별 상황 표현
-- `useState`로 현재 단계를 관리하고 버튼으로 단계 전환
-
-### client/hooks/useProblemAnalysis.ts
-
-- 서버의 `/api/analyze` 엔드포인트 호출 담당
-- 1단계(이미지 분석)와 2단계(풀이 생성) 요청을 함수로 분리
-- 로딩/에러 상태 관리
-
-### server/routes/analyze.ts
-
-- `POST /api/analyze` 라우트 정의
-- 요청 본문에서 이미지(Base64) 또는 분석 파라미터를 받아 claudeService로 전달
-
-### server/services/claudeService.ts
-
-- Claude API 호출 로직 집중
-- mathPrompt의 프롬프트와 mathSchema의 스키마를 사용
-- Claude 응답을 가공 없이 클라이언트로 반환
-
----
-
-## 개발 순서 (권장)
-
-1. **Vite React 웹 프로젝트 생성** — client 디렉토리, Tailwind 세팅
-2. **이미지 업로드 + 미리보기 구현** — ImageUploader, Base64 변환
-3. **Express 서버 생성** — server 디렉토리, index.ts, .env 구성
-4. **React → server 요청 연결** — useProblemAnalysis로 /api/analyze 호출
-5. **server → Claude API 호출 연결** — claudeService, mathPrompt
-6. **Claude 응답 JSON 타입 정의** — types/math.ts, schemas/mathSchema.ts
-7. **FormulaView 먼저 구현** — KaTeX 단계별 풀이 (가장 단순)
-8. **GraphView 구현** — Desmos API 연동
-9. **AnimationView 마지막에 구현** — Motion+SVG (가장 복잡)
+`RichText.tsx`가 `$...$`, `$$...$$`, `\(...\)`, `\[...\]` 4가지 형식을 모두 KaTeX로 렌더링한다.
+- 인라인 수식: `$...$` (예: `$f'(x) = 0$`)
+- 블록 수식: `$$...$$` (예: `$$x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}$$`)
+- 일반 텍스트 수식 금지: `f'(x) = 0`, `α+β` 형식 사용 불가
 
 ---
 
@@ -373,8 +318,8 @@ const response = await fetch("https://api.anthropic.com/v1/messages", {
 
 - `server/.env` 파일은 절대 git에 커밋하지 않는다.
 - Claude API는 **서버에서만** 호출한다. 클라이언트는 자체 서버의 `/api/analyze`만 호출한다.
-- Desmos 데모 키는 테스트용이며, 제출 전 발급받은 무료 키로 교체한다.
-- Claude API 응답은 반드시 JSON 파싱 전에 마크다운 코드 펜스(```json ... ```)를 제거한다.
-- KaTeX는 LaTeX 문법 오류 시 렌더링 실패할 수 있으므로 try-catch로 감싼다.
-- Desmos는 전역 객체(`window.Desmos`)로 로드되므로 TypeScript에서는 `declare const Desmos: any`로 타입 선언한다.
-- 서버는 단순 프록시로 얇게 유지하여 실시간 응답 지연을 최소화한다.
+- Claude API 응답은 반드시 JSON 파싱 전에 마크다운 코드 펜스(` ```json ... ``` `)를 제거한다. (`stripMarkdownFences`)
+- KaTeX는 LaTeX 문법 오류 시 렌더링 실패할 수 있으므로 `Katex.tsx`에서 try-catch로 감싼다.
+- Desmos는 전역 객체(`window.Desmos`)로 로드되므로 TypeScript에서는 `declare const Desmos: any`로 선언한다.
+- LaTeX 역슬래시 이스케이프 문제는 `fixJsonBackslashes()`가 자동 처리한다.
+- `buildProblemFromAPI()`에서 API 응답을 Problem 타입으로 변환할 때 visualData 타입별 분기가 복잡하므로 수정 시 주의한다.

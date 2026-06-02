@@ -4,12 +4,15 @@ import Katex from '../shared/Katex'
 import RichText from '../shared/RichText'
 import DesmosInlineGraph from './DesmosInlineGraph'
 import DesmosStepGraph from './DesmosStepGraph'
+import ColoringInteractive from './ColoringInteractive'
 import type { Problem, DifficultyType } from '../../data/sampleProblems'
+import type { ApplicationInteractiveData } from '../../types/math'
 
 interface FormulaViewProps {
   problem: Problem
   difficulty?: DifficultyType
   onAskStep?: (text: string) => void
+  applicationInteractive?: ApplicationInteractiveData
 }
 
 interface StepExplanation {
@@ -67,9 +70,10 @@ function StepContent({
   )
 }
 
-const FormulaView = ({ problem, difficulty, onAskStep }: FormulaViewProps) => {
+const FormulaView = ({ problem, difficulty, onAskStep, applicationInteractive }: FormulaViewProps) => {
   const steps = problem.steps
   const isMidway = difficulty === 'midway'
+  const interactive = applicationInteractive ?? problem.applicationInteractive
 
   const [revealed, setRevealed] = useState(1)
   const [done, setDone] = useState(false)
@@ -146,59 +150,73 @@ const FormulaView = ({ problem, difficulty, onAskStep }: FormulaViewProps) => {
       </div>
     ) : null
 
+  const InteractiveBlock = interactive ? (
+    <div className="step-interactive-block">
+      <div className="sib-label">
+        <Icon name="motion" size={14} />
+        직접 해보기
+      </div>
+      <ColoringInteractive interactive={interactive} />
+    </div>
+  ) : null
+
   // ── Midway 점진적 공개 UX ──
   if (isMidway) {
     return (
       <div>
+        {interactive && interactive.stepIndex < 0 && InteractiveBlock}
         <div className="fsteps">
           {steps.map((s, i) => {
             if (i >= revealed) return null
             const isCur = i === revealed - 1 && !done
             const exp = explains[i]
             return (
-              <div
-                key={i}
-                ref={(el) => { stepRefs.current[i] = el }}
-                className={'fstep shown' + (isCur ? ' cur' : '')}
-              >
-                <div className="num">{i + 1}</div>
-                <div className="fc">
-                  <StepContent s={s} visible={true} />
+              <>
+                <div
+                  key={i}
+                  ref={(el) => { stepRefs.current[i] = el }}
+                  className={'fstep shown' + (isCur ? ' cur' : '')}
+                >
+                  <div className="num">{i + 1}</div>
+                  <div className="fc">
+                    <StepContent s={s} visible={true} />
 
-                  {exp.loading && (
-                    <div className="step-explain loading-explain">
-                      <div className="typing"><i /><i /><i /></div>
-                      <span>더 쉬운 설명을 준비하고 있어요...</span>
-                    </div>
-                  )}
-                  {exp.text && (
-                    <div className="step-explain">
-                      <div className="explain-label">💡 심화 설명</div>
-                      <div className="explain-body"><RichText text={exp.text} /></div>
-                    </div>
-                  )}
+                    {exp.loading && (
+                      <div className="step-explain loading-explain">
+                        <div className="typing"><i /><i /><i /></div>
+                        <span>더 쉬운 설명을 준비하고 있어요...</span>
+                      </div>
+                    )}
+                    {exp.text && (
+                      <div className="step-explain">
+                        <div className="explain-label">💡 심화 설명</div>
+                        <div className="explain-body"><RichText text={exp.text} /></div>
+                      </div>
+                    )}
 
-                  {isCur && (
-                    <div className="midway-btns">
-                      <button
-                        className="btn btn-quiet btn-sm"
-                        onClick={() => handleExplain(i)}
-                        disabled={exp.loading || !!exp.text}
-                      >
-                        <Icon name="help" size={14} />
-                        {exp.text ? '설명 확인 완료' : '이 단계가 잘 이해가 안 돼요'}
-                      </button>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleNext(i)}
-                      >
-                        {i + 1 >= steps.length ? '마지막 단계 완료' : '알겠어요, 다음 단계 →'}
-                      </button>
-                    </div>
-                  )}
+                    {isCur && (
+                      <div className="midway-btns">
+                        <button
+                          className="btn btn-quiet btn-sm"
+                          onClick={() => handleExplain(i)}
+                          disabled={exp.loading || !!exp.text}
+                        >
+                          <Icon name="help" size={14} />
+                          {exp.text ? '설명 확인 완료' : '이 단계가 잘 이해가 안 돼요'}
+                        </button>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleNext(i)}
+                        >
+                          {i + 1 >= steps.length ? '마지막 단계 완료' : '알겠어요, 다음 단계 →'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <AskBtn s={s} i={i} />
                 </div>
-                <AskBtn s={s} i={i} />
-              </div>
+                {interactive && i === interactive.stepIndex && InteractiveBlock}
+              </>
             )
           })}
         </div>
@@ -216,38 +234,42 @@ const FormulaView = ({ problem, difficulty, onAskStep }: FormulaViewProps) => {
   const normalDone = shown >= steps.length
   return (
     <div>
+      {interactive && interactive.stepIndex < 0 && InteractiveBlock}
       <div className="fsteps">
         {steps.map((s, i) => {
           const visible = i < shown
           const isCur = i === shown - 1
           return (
-            <div key={i} className={'fstep' + (visible ? ' shown' : '') + (isCur ? ' cur' : '')}>
-              <div className="num">{i + 1}</div>
-              <div className="fc">
-                <StepContent s={s} visible={visible} />
+            <>
+              <div key={i} className={'fstep' + (visible ? ' shown' : '') + (isCur ? ' cur' : '')}>
+                <div className="num">{i + 1}</div>
+                <div className="fc">
+                  <StepContent s={s} visible={visible} />
 
-                {visible && isCur && (
-                  <div className="step-nav-btns">
-                    <span className="step-prog">{shown} / {steps.length} 단계</span>
-                    {shown > 1 && (
-                      <button className="btn btn-quiet btn-sm" onClick={() => setShownNormal((s) => Math.max(1, s - 1))}>
-                        <Icon name="arrowL" size={15} /> 이전
-                      </button>
-                    )}
-                    {!normalDone ? (
-                      <button className="btn btn-primary btn-sm" onClick={() => setShownNormal((s) => s + 1)}>
-                        다음 단계 <Icon name="arrow" size={15} />
-                      </button>
-                    ) : (
-                      <button className="btn btn-quiet btn-sm" onClick={() => setShownNormal(1)}>
-                        <Icon name="refresh" size={15} /> 처음부터
-                      </button>
-                    )}
-                  </div>
-                )}
+                  {visible && isCur && (
+                    <div className="step-nav-btns">
+                      <span className="step-prog">{shown} / {steps.length} 단계</span>
+                      {shown > 1 && (
+                        <button className="btn btn-quiet btn-sm" onClick={() => setShownNormal((s) => Math.max(1, s - 1))}>
+                          <Icon name="arrowL" size={15} /> 이전
+                        </button>
+                      )}
+                      {!normalDone ? (
+                        <button className="btn btn-primary btn-sm" onClick={() => setShownNormal((s) => s + 1)}>
+                          다음 단계 <Icon name="arrow" size={15} />
+                        </button>
+                      ) : (
+                        <button className="btn btn-quiet btn-sm" onClick={() => setShownNormal(1)}>
+                          <Icon name="refresh" size={15} /> 처음부터
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {visible && <AskBtn s={s} i={i} />}
               </div>
-              {visible && <AskBtn s={s} i={i} />}
-            </div>
+              {interactive && visible && i === interactive.stepIndex && InteractiveBlock}
+            </>
           )
         })}
       </div>

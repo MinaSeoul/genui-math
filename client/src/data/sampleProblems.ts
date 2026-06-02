@@ -1,5 +1,5 @@
-import type { DifficultyType, ProblemType, TrigGeometry, InequalityGraph } from '../types/math'
-export type { DifficultyType, ProblemType, TrigGeometry, InequalityGraph }
+import type { DifficultyType, ProblemType, TrigGeometry, InequalityGraph, ApplicationInteractiveData } from '../types/math'
+export type { DifficultyType, ProblemType, TrigGeometry, InequalityGraph, ApplicationInteractiveData }
 
 export interface Difficulty {
   code: DifficultyType
@@ -71,6 +71,7 @@ export interface Problem {
   anim?: AnimConfig
   trigGeometry?: TrigGeometry
   inequalityGraph?: InequalityGraph
+  applicationInteractive?: ApplicationInteractiveData
 }
 
 export const DIFFICULTIES: Difficulty[] = [

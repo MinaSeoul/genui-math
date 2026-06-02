@@ -82,8 +82,44 @@ export interface GraphVisualData {
   extrema?: GraphExtremum[]
 }
 
+export interface ColoringCell {
+  id: string
+  row: number
+  col: number
+  rowSpan?: number
+  colSpan?: number
+}
+
+export interface ColoringFigure {
+  cells: ColoringCell[]
+  gridRows: number
+  gridCols: number
+  adjacency: [string, string][]
+}
+
+export interface ColoringCase {
+  label: string         // 탭 제목, 예: "경우 1"
+  description: string   // 조건 설명, 예: "C와 D의 색이 같은 경우"
+  formula: string       // 이 경우의 계산식
+  count: number         // 이 경우의 경우의 수
+  exampleColors: Record<string, string>  // 예시 색상 (팔레트 인덱스 문자열 "0"~"6")
+}
+
+export interface ApplicationInteractiveData {
+  type: 'coloring'
+  stepIndex: number
+  figure: ColoringFigure
+  numColors: number
+  coloringOrder?: string[]
+  cases?: ColoringCase[]    // 경우를 나눠야 할 때 (합의 법칙)
+  caseIntro?: string        // 케이스 분리 이유 (비인접 쌍 설명)
+  totalFormula?: string     // 전체 합산 공식
+  prompt?: string
+}
+
 export interface ApplicationVisualData {
   type: 'application'
+  interactive?: ApplicationInteractiveData
   rate?: number
   unit?: string
   totalTime?: number
