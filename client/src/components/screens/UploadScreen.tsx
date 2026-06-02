@@ -26,7 +26,7 @@ const UploadScreen = ({ onPick, onUpload }: UploadScreenProps) => {
   const samples = [
     { key: 'formula', icon: 'func', cls: 'formula', title: '단순 수식형', desc: '25ˣ − 2·5ˣ⁺¹ + 5 = 0 — 치환으로 지수방정식 풀기' },
     { key: 'graph', icon: 'graph', cls: 'graph', title: '함수·그래프형', desc: 'f(x) = x³ − 3x 의 극값 — 인터랙티브 그래프로 극대·극소 확인' },
-    { key: 'application', icon: 'drop', cls: 'ico-app', title: '활용문제형', desc: '주사위 두 번, 합이 8 이상 — 6×6 표 애니메이션으로 경우의 수 파악' },
+    { key: 'application', icon: 'motion', cls: 'ico-app', title: '활용문제형', desc: '주사위 두 번, 합이 8 이상 — 6×6 표 애니메이션으로 경우의 수 파악' },
   ]
 
   return (
@@ -37,10 +37,11 @@ const UploadScreen = ({ onPick, onUpload }: UploadScreenProps) => {
           막힌 곳부터 풀어주는 맞춤 수학 도우미
         </div>
         <h1 className="hero-title stack stack-1">
-          수학 문제 사진을 올리면,<br /><em>이해되는 방식으로</em> 풀어드려요
+          언제든 AI에게 물어보고,<br /><em>그래프로</em> 이해하는 수학
         </h1>
         <p className="hero-sub stack stack-2">
-          스크린샷 한 장이면 충분해요. 문제를 알아서 분류하고, 어디서 막혔는지 먼저 물어본 뒤
+          스크린샷 한 장이면 충분해요.<br />
+          문제를 알아서 분류하고, 어디서 막혔는지 먼저 물어본 뒤
           그래프·애니메이션·단계 풀이로 <b style={{ color: 'var(--text-1)' }}>학생에게 맞는 설명</b>을 만들어 줍니다.
         </p>
 

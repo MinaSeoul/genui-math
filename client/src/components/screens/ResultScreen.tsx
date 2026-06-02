@@ -54,7 +54,7 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
         <div className="rh-info">
           <h1>{problem.title}</h1>
           <div className="meta">
-            <span className="tagpill type"><Icon name={vizMeta.icon} size={13} /> {problem.typeLabel}</span>
+            <span className={`tagpill type type-${problem.type}`}><Icon name={vizMeta.icon} size={13} /> {problem.typeLabel}</span>
             <span className="tagpill diff"><Icon name={diff.icon} size={13} /> 막힌 곳: {diff.title}</span>
             <span className="tagpill dot"><Icon name="spark" size={12} /> 맞춤 풀이</span>
           </div>

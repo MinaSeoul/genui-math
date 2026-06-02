@@ -176,7 +176,7 @@ ${problemText}
     }
   ],
   ${VISUAL_DATA_INSTRUCTIONS[problemType]},
-  "stuckExplanation": "이 문제 유형에서 이 어려움 지점에 학생들이 주로 막히는 이유를 1~2문장 한국어로 설명"
+  "stuckExplanation": "이 문제 유형에서 이 어려움 지점에 학생들이 주로 막히는 이유를 1~2문장 한국어로 설명. 핵심 개념·행동·수식은 **굵게** 표시할 것 (예: **치환**, **도함수를 구한 뒤**)"
 }
 
 규칙:

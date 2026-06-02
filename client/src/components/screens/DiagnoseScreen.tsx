@@ -44,7 +44,8 @@ const ProblemBody = ({ p }: { p: Problem }) => {
 }
 
 const DiagnoseScreen = ({ problem, selected, setSelected, onContinue }: DiagnoseScreenProps) => {
-  const typeIcon = ({ graph: 'graph', application: 'drop', formula: 'func' } as Record<string, string>)[problem.type]
+  const typeIcon = ({ graph: 'graph', application: 'motion', formula: 'func' } as Record<string, string>)[problem.type]
+  const typeCls = ({ graph: 'ti-graph', application: 'ti-app', formula: 'ti-formula' } as Record<string, string>)[problem.type] ?? ''
 
   return (
     <div className="container screen">
@@ -67,7 +68,7 @@ const DiagnoseScreen = ({ problem, selected, setSelected, onContinue }: Diagnose
               <h2>문제를 인식했어요</h2>
             </div>
             <div className="typecard">
-              <div className="ti"><Icon name={typeIcon} size={24} /></div>
+              <div className={`ti ${typeCls}`}><Icon name={typeIcon} size={24} /></div>
               <div className="tt">
                 <div className="lbl">분류된 유형</div>
                 <h3>{problem.typeLabel}</h3>
