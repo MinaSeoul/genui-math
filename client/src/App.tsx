@@ -89,17 +89,6 @@ function buildProblemFromAPI(
     }
   }
 
-  // application: visualData 필드를 AnimationView 형태로 매핑
-  let anim: Problem['anim']
-  if (analysis.problemType === 'application') {
-    const vd = solution?.visualData
-    anim = {
-      fillSeconds: (vd as { totalTime?: number })?.totalTime ?? 10,
-      heightCm: (vd as { totalHeight?: number })?.totalHeight ?? 20,
-      rate: (vd as { rate?: number })?.rate ?? 2,
-    }
-  }
-
   // 부등식: visualData에 inequalityExpr이 있으면 InequalityGraph 빌드
   // 없더라도 steps 중 quadratic_inequality 단계가 있으면 폴백으로 빌드
   let inequalityGraph: Problem['inequalityGraph']
@@ -145,7 +134,6 @@ function buildProblemFromAPI(
     steps,
     stuck,
     graph,
-    anim,
     trigGeometry: trigGeometry ?? undefined,
     inequalityGraph,
     chat: {
@@ -248,8 +236,8 @@ function App() {
 
     setSolutionResult(result)
 
-    // 삼각함수 문제이면 풀이 단계를 바탕으로 도형 좌표 생성 (3단계)
-    if (isTrigProblem(analysisResult.problemText, analysisResult.problemSummary)) {
+    // 이미지에 도형이 있으면 풀이 단계를 바탕으로 도형 좌표 생성 (3단계)
+    if (analysisResult.hasFigure || isTrigProblem(analysisResult.problemText, analysisResult.problemSummary)) {
       const diagram = await generateDiagram(analysisResult.problemText, result.steps)
       setTrigGeometry(diagram)
     }

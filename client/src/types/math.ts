@@ -23,9 +23,15 @@ export interface TrigGeomAngle {
   highlight?: boolean
 }
 
+export interface TrigGeomFill {
+  vertices: string[]  // 꼭짓점 이름 배열
+  color: string       // 'blue' | 'red' | 'green' | 'orange' | 'purple' | 'yellow' | 'teal'
+}
+
 export interface TrigGeometry {
   description: string
-  fill?: string[]
+  fill?: string[]           // 하위호환용 (단순 파란색 채우기)
+  fills?: TrigGeomFill[]    // 여러 색깔의 채우기 영역
   vertices: TrigGeomVertex[]
   segments: TrigGeomSegment[]
   angles?: TrigGeomAngle[]
@@ -93,6 +99,7 @@ export interface AnalysisResult {
   latex: string
   confidence?: number
   problemSummary?: string
+  hasFigure?: boolean
 }
 
 export interface SolutionResult {

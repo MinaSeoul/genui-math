@@ -8,6 +8,7 @@ export interface AnalyzeImageResponse {
   latex: string
   confidence: number
   problemSummary?: string
+  hasFigure?: boolean  // 이미지에 기하 도형(삼각형, 원 등 레이블된 도형)이 있으면 true
 }
 
 // 2단계: 풀이 생성 응답
@@ -77,9 +78,15 @@ export interface TrigGeomAngle {
   highlight?: boolean
 }
 
+export interface TrigGeomFill {
+  vertices: string[]  // 꼭짓점 이름 배열로 구성된 다각형 영역
+  color: string       // 'blue' | 'red' | 'green' | 'orange' | 'purple' | 'yellow' | 'teal'
+}
+
 export interface TrigGeometry {
   description: string
-  fill?: string[]
+  fill?: string[]           // 하위호환용 (단순 파란색 채우기)
+  fills?: TrigGeomFill[]    // 여러 색깔의 채우기 영역
   vertices: TrigGeomVertex[]
   segments: TrigGeomSegment[]
   angles?: TrigGeomAngle[]

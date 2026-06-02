@@ -37,11 +37,6 @@ export interface GraphConfig {
 }
 
 export interface AnimConfig {
-  // water tank animation
-  fillSeconds?: number
-  heightCm?: number
-  rate?: number
-  // dice probability animation
   totalCases?: number
   favorable?: [number, number][]
 }

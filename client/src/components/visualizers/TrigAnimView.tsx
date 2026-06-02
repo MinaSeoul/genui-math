@@ -5,6 +5,32 @@ declare const Desmos: any
 
 interface TrigAnimViewProps {
   geometry: TrigGeometry
+  mini?: boolean
+}
+
+// ─── Label sanitizer: LaTeX → Unicode (Desmos labels don't support \cmd) ───
+
+function toPlainLabel(s: string): string {
+  return s
+    .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1)/($2)')
+    .replace(/\\sqrt\{([^}]*)\}/g, '√($1)')
+    .replace(/\\sqrt\s*(\d)/g, '√$1')
+    .replace(/\\left|\\right/g, '')
+    .replace(/\\cdot/g, '·')
+    .replace(/\\times/g, '×')
+    .replace(/\\pm/g, '±')
+    .replace(/\\pi/g, 'π')
+    .replace(/\\alpha/g, 'α')
+    .replace(/\\beta/g, 'β')
+    .replace(/\\gamma/g, 'γ')
+    .replace(/\\delta/g, 'δ')
+    .replace(/\\theta/g, 'θ')
+    .replace(/\\phi/g, 'φ')
+    .replace(/\\circ/g, '°')
+    .replace(/\^{([^}]*)}/g, '^$1')
+    .replace(/_{([^}]*)}/g, '_$1')
+    .replace(/\\[a-zA-Z]+/g, '')
+    .replace(/[{}]/g, '')
 }
 
 // ─── Vector helpers ─────────────────────────────────────────────────────────
@@ -21,7 +47,7 @@ const f = (n: number) => n.toFixed(5)  // Desmos expression precision
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-const TrigAnimView = ({ geometry }: TrigAnimViewProps) => {
+const TrigAnimView = ({ geometry, mini = false }: TrigAnimViewProps) => {
   const elRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -63,8 +89,34 @@ const TrigAnimView = ({ geometry }: TrigAnimViewProps) => {
     const cx = geometry.vertices.reduce((s, v) => s + v.x, 0) / (geometry.vertices.length || 1)
     const cy = geometry.vertices.reduce((s, v) => s + v.y, 0) / (geometry.vertices.length || 1)
 
-    // ① 삼각형 내부 색칠 (polygon 함수 사용) ──────────────────────────────
-    if (geometry.fill && geometry.fill.length >= 3) {
+    // ① 채우기 영역 (fills 우선, 없으면 하위호환 fill 사용) ──────────────
+    const FILL_COLORS: Record<string, string> = {
+      blue:   '#3B82F6',
+      red:    '#EF4444',
+      green:  '#22C55E',
+      orange: '#F97316',
+      purple: '#A855F7',
+      yellow: '#EAB308',
+      teal:   '#14B8A6',
+    }
+
+    if (geometry.fills && geometry.fills.length > 0) {
+      geometry.fills.forEach((fill, i) => {
+        const pts = fill.vertices
+          .map(n => vm[n])
+          .filter(Boolean)
+          .map(p => `(${f(p.x)},${f(p.y)})`)
+          .join(',')
+        if (!pts) return
+        calc.setExpression({
+          id: `fill_${i}`,
+          latex: `polygon(${pts})`,
+          color: FILL_COLORS[fill.color] ?? fill.color,
+          lineWidth: 0,
+          fillOpacity: 0.35,
+        })
+      })
+    } else if (geometry.fill && geometry.fill.length >= 3) {
       const pts = geometry.fill
         .map(n => vm[n])
         .filter(Boolean)
@@ -75,6 +127,7 @@ const TrigAnimView = ({ geometry }: TrigAnimViewProps) => {
         latex: `polygon(${pts})`,
         color: '#3B82F6',
         lineWidth: 0,
+        fillOpacity: 0.35,
       })
     }
 
@@ -108,7 +161,7 @@ const TrigAnimView = ({ geometry }: TrigAnimViewProps) => {
           id: `seg_lbl_${i}`,
           latex: `(${f(lx)},${f(ly)})`,
           showLabel: true,
-          label: seg.label,
+          label: toPlainLabel(seg.label),
           color: seg.dashed ? '#7C3AED' : '#4B5563',
           pointSize: 1,
         })
@@ -202,7 +255,7 @@ const TrigAnimView = ({ geometry }: TrigAnimViewProps) => {
         id: `arc_lbl_${i}`,
         latex: `(${f(vp.x + lr * Math.cos(midA))},${f(vp.y + lr * Math.sin(midA))})`,
         showLabel: true,
-        label: ang.label,
+        label: toPlainLabel(ang.label),
         color,
         pointSize: 1,
       })
@@ -226,24 +279,40 @@ const TrigAnimView = ({ geometry }: TrigAnimViewProps) => {
     return () => { try { calc.destroy() } catch (_) { /* ignore */ } }
   }, [JSON.stringify(geometry)])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasDashed   = geometry.segments.some(s => s.dashed)
+  const hasDashed    = geometry.segments.some(s => s.dashed)
   const hasHighlight = geometry.angles?.some(a => a.highlight) ?? false
+  const fillColorMap: Record<string, string> = {
+    blue: '#3B82F6', red: '#EF4444', green: '#22C55E',
+    orange: '#F97316', purple: '#A855F7', yellow: '#EAB308', teal: '#14B8A6',
+  }
+  const activeFills = geometry.fills?.length
+    ? geometry.fills
+    : geometry.fill?.length ? [{ vertices: geometry.fill, color: 'blue' }] : []
 
   return (
     <div>
-      <div className="desmos-inline-label">
-        <span style={{ color: '#1D4ED8' }}>●</span> 꼭짓점
-        {hasDashed && (
-          <>&nbsp;&nbsp;<span style={{ color: '#7C3AED' }}>╌</span> 보조선</>
-        )}
-        {hasHighlight && (
-          <>&nbsp;&nbsp;<span style={{ color: '#7C3AED' }}>⌒</span> 핵심 각도</>
-        )}
-      </div>
-      <div ref={elRef} style={{ width: '100%', height: 390 }} />
-      <p className="muted" style={{ fontSize: 12.5, marginTop: 10, lineHeight: 1.6 }}>
-        {geometry.description} — 마우스 휠로 확대·축소, 드래그로 이동할 수 있어요.
-      </p>
+      {!mini && (
+        <div className="desmos-inline-label">
+          <span style={{ color: '#1D4ED8' }}>●</span> 꼭짓점
+          {activeFills.map((fl, i) => (
+            <span key={i}>
+              &nbsp;&nbsp;<span style={{ color: fillColorMap[fl.color] ?? fl.color }}>■</span> {fl.color === 'blue' ? '도형 영역' : `영역 ${i + 1}`}
+            </span>
+          ))}
+          {hasDashed && (
+            <>&nbsp;&nbsp;<span style={{ color: '#7C3AED' }}>╌</span> 보조선</>
+          )}
+          {hasHighlight && (
+            <>&nbsp;&nbsp;<span style={{ color: '#7C3AED' }}>⌒</span> 핵심 각도</>
+          )}
+        </div>
+      )}
+      <div ref={elRef} style={{ width: '100%', height: mini ? 200 : 390 }} />
+      {!mini && (
+        <p className="muted" style={{ fontSize: 12.5, marginTop: 10, lineHeight: 1.6 }}>
+          {geometry.description} — 마우스 휠로 확대·축소, 드래그로 이동할 수 있어요.
+        </p>
+      )}
     </div>
   )
 }

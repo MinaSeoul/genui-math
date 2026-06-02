@@ -91,6 +91,14 @@ const ResultScreen = ({ problem, difficulty, onRestart }: ResultScreenProps) => 
               )}
             </div>
           </div>
+          {problem.trigGeometry && (
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '12px 16px 4px' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Icon name="motion" size={12} /> 문제 도형 (Claude 재현)
+              </div>
+              <TrigAnimView geometry={problem.trigGeometry} mini />
+            </div>
+          )}
         </div>
 
         {/* Col 2: 막힌 지점 설명 */}

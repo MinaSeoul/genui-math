@@ -178,7 +178,7 @@ export async function generateDiagram(
   try {
     const rawText = await callClaude({
       model: MODEL,
-      max_tokens: 1200,
+      max_tokens: 2000,
       messages: [
         {
           role: 'user',
@@ -188,8 +188,14 @@ export async function generateDiagram(
     })
 
     const stripped = stripMarkdownFences(rawText).trim()
-    if (stripped === 'null' || stripped === '') return null
-    return parseJson<GenerateDiagramResponse>(stripped)
+    if (!stripped) return null
+
+    // Claude가 분석 텍스트를 JSON 앞에 출력했을 경우 JSON 객체만 추출
+    const jsonStart = stripped.indexOf('{')
+    if (jsonStart === -1) return null  // JSON 없음 → 도형 없는 문제
+    const clean = stripped.slice(jsonStart)
+
+    return parseJson<GenerateDiagramResponse>(clean)
   } catch (error) {
     throw new Error(
       `generateDiagram failed: ${error instanceof Error ? error.message : String(error)}`,
