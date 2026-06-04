@@ -43,12 +43,12 @@
 | 역할 | 라이브러리/API | 비고 |
 |------|--------------|------|
 | UI 프레임워크 | React + TypeScript | Vite로 세팅 |
-| 스타일링 | 커스텀 CSS (styles.css) | |
+| 스타일링 | 커스텀 CSS (styles.css) + Tailwind CSS (index.css) | postcss.config.js / tailwind.config.js 포함 |
 | 수식 렌더링 | KaTeX | `shared/Katex.tsx` + `shared/RichText.tsx`로 래핑 |
 | 함수 그래프 시각화 | Desmos API | script 태그로 로드; DesmosGraphPanel·DesmosStepGraph·DesmosInlineGraph |
 | 도형 시각화 | SVG (직접 구현) | TrigAnimView.tsx — Claude 생성 좌표를 SVG로 렌더링 |
 | 칠하기 인터랙티브 | React + CSS Grid | ColoringInteractive.tsx |
-| 활용문제 애니메이션 | Framer Motion + SVG | AnimationView.tsx (샘플 문제용) |
+| 활용문제 애니메이션 | React + SVG + requestAnimationFrame | AnimationView.tsx (샘플 문제용, framer-motion 미사용) |
 
 ### Backend (server)
 
@@ -92,18 +92,27 @@ genui-math/
 ├── README.md
 ├── .gitignore
 ├── package.json
+├── package-lock.json
 │
 ├── client/
 │   ├── index.html                # Desmos API script 태그 포함
+│   ├── public/
+│   │   ├── favicon.svg
+│   │   └── icons.svg
 │   ├── src/
 │   │   ├── App.tsx               # phase 상태 관리 + API 오케스트레이션 + buildProblemFromAPI
+│   │   ├── App.css
 │   │   ├── main.tsx
-│   │   ├── styles.css
+│   │   ├── index.css             # Tailwind CSS 진입점 (@tailwind base/components/utilities)
+│   │   ├── styles.css            # 커스텀 CSS (컴포넌트 스타일)
+│   │   │
+│   │   ├── assets/
+│   │   │   └── hero.png
 │   │   │
 │   │   ├── components/
 │   │   │   ├── screens/
 │   │   │   │   ├── UploadScreen.tsx      # PNG 업로드 + 샘플 문제 선택
-│   │   │   │   ├── DiagnoseScreen.tsx    # 어려움 유형 선택 (4개 버튼)
+│   │   │   │   ├── DiagnoseScreen.tsx    # 어려움 유형 선택 (3개 버튼)
 │   │   │   │   ├── LoadingScreen.tsx     # 인식중/생성중 로딩 화면
 │   │   │   │   ├── ResultScreen.tsx      # 결과 화면 (시각화 + 풀이 + 챗)
 │   │   │   │   └── Stepper.tsx           # 상단 진행 단계 표시
@@ -120,7 +129,7 @@ genui-math/
 │   │   │   │   ├── DesmosInlineGraph.tsx # 이차부등식 범위 강조 그래프
 │   │   │   │   ├── InequalityGraphPanel.tsx # 부등식 그래프 패널
 │   │   │   │   ├── TrigAnimView.tsx      # SVG 도형 시각화 (Claude 좌표 기반)
-│   │   │   │   ├── AnimationView.tsx     # 활용문제 SVG 애니메이션 (샘플 문제용)
+│   │   │   │   ├── AnimationView.tsx     # 활용문제 SVG 애니메이션 (requestAnimationFrame, 샘플 문제용)
 │   │   │   │   └── ColoringInteractive.tsx # 경우의 수·칠하기 인터랙티브 UI
 │   │   │   │
 │   │   │   ├── ChatPanel.tsx             # 문제 맥락 기반 AI 채팅 패널
@@ -130,10 +139,10 @@ genui-math/
 │   │   │   └── icons.tsx                 # SVG 아이콘 컴포넌트
 │   │   │
 │   │   ├── data/
-│   │   │   └── sampleProblems.ts         # Problem 타입 정의 + 샘플 문제 데이터
+│   │   │   └── sampleProblems.ts         # 샘플 문제 데이터 (Problem 타입은 types/math.ts 참조)
 │   │   │
 │   │   ├── hooks/
-│   │   │   └── useProblemAnalysis.ts     # 서버 /api/analyze 3단계 호출 훅
+│   │   │   └── useProblemAnalysis.ts     # 서버 /api/analyze 호출 훅 (analyzeImage / generateSolution / generateDiagram)
 │   │   │
 │   │   ├── prompts/                      # 단원별 시스템 프롬프트 (Markdown)
 │   │   │   ├── common.md
@@ -144,7 +153,12 @@ genui-math/
 │   │   └── types/
 │   │       └── math.ts                   # 클라이언트 타입 (서버 스키마와 동기화)
 │   │
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
 │   ├── vite.config.ts
+│   ├── tsconfig.json
+│   ├── tsconfig.app.json
+│   ├── tsconfig.node.json
 │   └── package.json
 │
 ├── server/
@@ -160,12 +174,19 @@ genui-math/
 │   │       └── mathSchema.ts             # 응답 JSON 스키마 타입 정의
 │   ├── .env                              # API 키 (git 제외)
 │   ├── .env.example
+│   ├── tsconfig.json
 │   └── package.json
 │
 └── docs/
-    ├── proposal.pdf
-    ├── report.md
     └── screenshots/
+        └── design/                       # 디자인 목업 JSX/CSS 파일
+            ├── app.jsx
+            ├── screens.jsx
+            ├── visualizers.jsx
+            ├── chat.jsx
+            ├── data.js
+            ├── icons.jsx
+            └── styles.css
 ```
 
 ---
@@ -179,10 +200,10 @@ genui-math/
          → POST /api/analyze { stage: 'analyze', imageBase64 }
     ↓
 [server] claudeService.analyzeImage() — Claude Vision
-         이미지 → problemText, problemType, latex, hasFigure
+         이미지 → problemText, problemType, problemSummary, latex, hasFigure
     ↓ AnalysisResult 반환
 [client] phase: 'diagnose' — DiagnoseScreen
-         학생이 어려움 유형 4가지 중 선택
+         학생이 어려움 유형 3가지 중 선택
     ↓
 [client] useProblemAnalysis.generateSolution()
          → POST /api/analyze { stage: 'solve', problemText, problemType, difficultyType }
@@ -246,7 +267,6 @@ genui-math/
 | `understanding` | 문제 자체가 무슨 말인지 모르겠음 | 전체 단계 일괄 표시 |
 | `strategy` | 문제는 이해하지만 어떻게 풀지 모르겠음 | 전체 단계 일괄 표시 |
 | `midway` | 풀이 중간까지는 됐는데 이후를 모르겠음 | 한 단계씩 점진적 공개 + 심화 설명 버튼 |
-| `visual` | 시각적으로 이해가 필요함 | 전체 단계 일괄 표시 |
 
 ---
 
